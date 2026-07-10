@@ -1,3 +1,3 @@
 # releaseasy
 
-Making releases easy.
+Release made easy
