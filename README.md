@@ -1,0 +1,3 @@
+# releaseasy
+
+Making releases easy.
