@@ -22,7 +22,6 @@ Release made easy
 - 确保在指定发布分支上执行发布
 - 确保 Git 工作目录干净
 - 集成灵活强大的 [git-cliff](https://github.com/orhun/git-cliff) 生成变更日志
-- 灵活的生命周期钩子系统
 - 自动更新 package.json 和 lock(如果存在) 文件版本
 - 自动执行 Git 操作（add / commit / tag / push）
 - 支持灵活配置 npm [dist-tags](https://docs.npmjs.com/cli/dist-tag)
