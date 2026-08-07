@@ -1,8 +1,9 @@
-export async function release(inlineConfig) {
-  console.log(inlineConfig);
+export async function release(optoins) {
+  console.log("qq");
 
-  // // 处理参数
-  // const config = await resolveConfig(inlineConfig);
+  console.log(optoins);
+
+  const config = await resolveConfig(optoins);
   // // 验证git仓库状态
   // await checkGitRepoStatus(config);
   // const context = await createContext(config);
