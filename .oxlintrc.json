@@ -5,7 +5,10 @@
   "categories": {
     "correctness": "error"
   },
-  "rules": {},
+  "rules": {
+    "no-unused-vars": "off",
+    "unicorn/no-empty-file": "off"
+  },
   "env": {
     "builtin": true
   }

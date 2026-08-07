@@ -1,31 +1,28 @@
 import { defineConfig } from "rolldown";
-import { cp } from "node:fs/promises";
+import pkg from "./package.json" with { type: "json" };
 
-const isProd = process.env.NODE_ENV === "production";
+const deps = Object.keys(pkg.dependencies ?? {});
+
+// const isProd = process.env.NODE_ENV === "production";
 
 export default defineConfig({
-  input: "src/index.js",
-  transform: {
-    target: "es2022",
+  input: {
+    index: "src/index.js",
+    cli: "src/cli.js",
   },
-  output: [
-    {
-      file: "dist/index.js",
-      format: "es",
-    },
-    {
-      file: `dist/dataset-config.${isProd ? "min." : ""}js`,
-      format: "iife",
-      name: "datasetConfig",
-      minify: isProd,
-    },
-  ],
-  plugins: [
-    {
-      name: "copy-types",
-      async closeBundle() {
-        await cp("src/index.d.ts", "dist/index.d.ts");
-      },
-    },
-  ],
+
+  platform: "node",
+
+  transform: {
+    target: "node20",
+  },
+
+  output: {
+    dir: "dist",
+    format: "esm",
+  },
+
+  external(id) {
+    return deps.some((dep) => id === dep || id.startsWith(dep + "/"));
+  },
 });
