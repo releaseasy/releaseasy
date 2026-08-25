@@ -6,8 +6,9 @@ import pkg from "../package.json" with { type: "json" };
 import { CancelledError, ExitSignal } from "./errors.js";
 import { logger } from "./utils/index.js";
 import { resolveConfig } from "./config/index.js";
+import CONSTANTS from "./constants/index.js";
 
-const cli = cac("releaseasy");
+const cli = cac(CONSTANTS.CLI_NAME);
 cli.help().version(pkg.version, "-V, --version");
 
 cli

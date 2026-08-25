@@ -1,10 +1,11 @@
 import { createConsola } from "consola";
 import { createDefu } from "defu";
 import { x } from "tinyexec";
+import CONSTANTS from "../constants/index.js";
 
 export const logger = createConsola({
   defaults: {
-    tag: "releaseasy",
+    tag: CONSTANTS.CLI_NAME,
   },
 });
 
