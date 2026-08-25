@@ -1,4 +1,4 @@
-import { defineConfig } from "./src/index";
+import { defineConfig } from "./src/index.js";
 
 export default defineConfig({
   increments: ["patch", "minor", "major"],

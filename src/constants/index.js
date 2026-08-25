@@ -1,4 +1,6 @@
-export const defaultConfig = {
+const CLI_NAME = "releaseasy";
+
+const DEFAULTS = {
   increments: ["patch", "minor", "major"],
   distTags: ["latest", "next"],
   git: {
@@ -11,3 +13,5 @@ export const defaultConfig = {
     },
   },
 };
+
+export default { DEFAULTS, CLI_NAME };

@@ -5,6 +5,7 @@ import lt from "semver/functions/lt.js";
 import pkg from "../package.json" with { type: "json" };
 import { CancelledError, ExitSignal } from "./errors.js";
 import { logger } from "./utils/index.js";
+import { resolveConfig } from "./config/index.js";
 
 const cli = cac("releaseasy");
 cli.help().version(pkg.version, "-V, --version");
@@ -12,7 +13,7 @@ cli.help().version(pkg.version, "-V, --version");
 cli
   .command("[run]", "Start release process")
   .alias("run")
-  .option("-d, --dry-run", "Simulate release without applying changes.")
+  .option("-d, --dry-run", "Simulate release without applying changes.", { default: false })
   .option("-c, --config <path>", "Path to the config file")
   .option("-v, --verbose", "Increases the logging verbosity", {
     type: [],
@@ -20,14 +21,9 @@ cli
   .action(async (_, options) => {
     const { release } = await import("./release.js");
 
-    console.log(release);
+    const config = await resolveConfig(options.config, normalizeCliOptions(options));
 
-    // const config = await resolveConfig({
-    //   configFile: options.config,
-    //   overrides: normalizeCliOptions(options),
-    // });
-
-    // await release(config);
+    console.log(config);
   });
 
 cli
@@ -39,17 +35,14 @@ cli
     const { changelog } = await import("./changelog.js");
 
     console.log(changelog);
-
-    // const args = cli.rawArgs.slice(3);
-
-    // await changelog(
-    //   {
-    //     range,
-    //     config: options.config,
-    //   },
-    //   args,
-    // );
   });
+
+function normalizeCliOptions(options) {
+  return {
+    dryRun: Boolean(options.dryRun),
+    verbose: Array.isArray(options.verbose) ? options.verbose.length : 0,
+  };
+}
 
 try {
   cli.parse(process.argv, { run: false });
