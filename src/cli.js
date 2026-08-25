@@ -3,17 +3,10 @@
 import { cac } from "cac";
 import lt from "semver/functions/lt.js";
 import pkg from "../package.json" with { type: "json" };
-import { NAME } from "./constants.js";
 import { CancelledError, ExitSignal } from "./errors.js";
 import { logger } from "./utils/index.js";
 
-if (lt(process.version, "22.18.0")) {
-  logger.warn(
-    `[${NAME}] Node.js ${process.version} is deprecated. Support will be removed in the next minor release. Please upgrade to Node.js 22.18.0 or later.`,
-  );
-}
-
-const cli = cac(NAME);
+const cli = cac("releaseasy");
 cli.help().version(pkg.version, "-V, --version");
 
 cli
