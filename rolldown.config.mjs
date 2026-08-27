@@ -13,9 +13,9 @@ export default defineConfig({
 
   platform: "node",
 
-  transform: {
-    target: "node20",
-  },
+  // transform: {
+  //   target: "node20",
+  // },
 
   output: {
     dir: "dist",
