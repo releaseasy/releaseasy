@@ -1,14 +1,19 @@
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
+  server: {
+    watch: {
+      ignored: ["**/aaddd/**"],
+    },
+  },
   test: {
     clearMocks: true,
-    environment: "jsdom",
+    environment: "node",
     include: ["test/**/*.test.js"],
-    coverage: {
-      include: ["src/**/*.js"],
-      exclude: [...configDefaults.exclude],
-      provider: "v8",
-    },
+    // coverage: {
+    //   include: ["src/**/*.js"],
+    //   exclude: [...configDefaults.exclude],
+    //   provider: "v8",
+    // },
   },
 });

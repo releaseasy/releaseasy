@@ -24,7 +24,7 @@ cli
 
     const config = await resolveConfig(options.config, normalizeCliOptions(options));
 
-    console.log(config);
+    await release();
   });
 
 cli
