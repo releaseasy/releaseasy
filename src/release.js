@@ -1,50 +1,26 @@
-import { checkGitRepoStatus } from "./steps/checkGitRepoStatus.js";
-import { withTimer } from "./utils/index.js";
+import assertGitReady from "./steps/assertGitReady.js";
+import collectGitBranch from "./steps/collectGitBranch.js";
+import collectPackageMetadata from "./steps/collectPackageMetadata.js";
+import { formatDuration, logger } from "./utils/index.js";
+import ansis from "ansis";
 
 export async function release(optoins) {
   console.log("======release========");
 
-  // // 验证git仓库状态
-  await checkGitRepoStatus();
-  /**
-   * @typedef {Object} User
-   * @property {string} name
-   * @property {number} age
-   * @property {string} email
-   */
-
-  /** @type {User} */
+  const start = performance.now();
   const context = Object.create(null);
 
-  // console.log('ww');
+  try {
+    // await assertGitReady(optoins);
+    await collectGitBranch(optoins, context);
+    await collectPackageMetadata(optoins, context);
 
-  // try {
-  //   await withTimer(async () => {
-  //     // 一系列的操作
-  //     // ..
-  //   });
-  // } catch (err) {
-  //   // await gitReset(context); // 回滚
-  //   throw err;
-  // }
+    console.log(optoins);
+
+    const cost = formatDuration(performance.now() - start);
+    logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
+  } catch (err) {
+    //  await gitReset(context);
+    // throw err;
+  }
 }
-
-//  async function createContext(
-//   options,
-// ){
-//   const context = Object.create(null);
-
-//   await collectGitContext(options, context);
-//   await collectRepoContext(context);
-//   await collectPackageContext(options, context);
-
-//   context.initialRef = await getGitHead();
-
-//   return {
-//     ...context,
-//     logger,
-//     cancel(message?: string) {
-//       throw new CancelledError(message);
-//     },
-//   };
-// }

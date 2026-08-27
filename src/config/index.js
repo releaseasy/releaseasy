@@ -3,13 +3,23 @@ import { lilconfig } from "lilconfig";
 import CONSTANTS from "../constants/index.js";
 import { defu } from "../utils/index.js";
 
-export async function resolveConfig(configPath, overrides = {}) {
-  const fileConfig = await loadConfig(configPath);
-
-  return defu(overrides, fileConfig, CONSTANTS.DEFAULTS);
+export async function resolveConfig(inlineConfig) {
+  inlineConfig = normalizeInlineOptions(inlineConfig);
+  const { config, cwd } = inlineConfig;
+  const fileConfig = await loadConfig(config, cwd);
+  return defu(inlineConfig, fileConfig, CONSTANTS.DEFAULTS);
 }
 
-async function loadConfig(configPath) {
+function normalizeInlineOptions(options) {
+  return {
+    cwd: resolve(options.cwd ?? process.cwd()),
+    config: options.config,
+    dryRun: Boolean(options.dryRun),
+    verbose: Array.isArray(options.verbose) ? options.verbose.length : 0,
+  };
+}
+
+async function loadConfig(filepath, cwd) {
   const explorer = lilconfig(CONSTANTS.CLI_NAME, {
     loaders: {
       ".mts": loadTS,
@@ -27,12 +37,9 @@ async function loadConfig(configPath) {
     ],
   });
 
-  let result;
-  if (configPath) {
-    result = await explorer.load(resolve(process.cwd(), configPath));
-  } else {
-    result = await explorer.search();
-  }
+  const result = filepath
+    ? await explorer.load(resolve(cwd, filepath))
+    : await explorer.search(cwd);
 
   return result?.config ?? {};
 }

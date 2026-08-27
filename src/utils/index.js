@@ -16,15 +16,7 @@ export const defu = createDefu((obj, key, value) => {
   }
 });
 
-export async function withTimer(fn) {
-  const start = performance.now();
-  const result = await fn();
-  const cost = formatDuration(performance.now() - start);
-  logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
-  return result;
-}
-
-function formatDuration(ms) {
+export function formatDuration(ms) {
   if (ms < 1000) return `${ms.toFixed(0)}ms`;
 
   const s = ms / 1000;
