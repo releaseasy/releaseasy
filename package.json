@@ -23,11 +23,11 @@
   "author": "ajiho",
   "repository": {
     "type": "git",
-    "url": "https://github.com/releaseasy/releaseasy.git"
+    "url": "git+https://github.com/releaseasy/releaseasy.git"
   },
   "funding": "https://www.lujiahao.com/sponsor",
   "bin": {
-    "releaseasy": "./dist/cli.mjs"
+    "releaseasy": "./dist/cli.js"
   },
   "files": [
     "dist/"
@@ -47,15 +47,16 @@
     "prepare": "simple-git-hooks",
     "fmt": "oxfmt",
     "lint": "oxlint",
-    "lint:fix": "oxlint --fix",
+    "lint:fix": "pnpm run lint --fix",
     "size": "size-limit",
     "clean": "rimraf dist",
-    "build:base": "rolldown -c",
-    "build:min": "cross-env NODE_ENV=production run-s build:base",
-    "build": "run-s clean build:*",
+    "rolldown": "rolldown -c",
+    "build": "run-s clean rolldown",
     "test": "vitest --coverage",
     "test:ui": "pnpm run test --ui",
     "coverage": "vitest run --coverage",
+    "publint": "publint",
+    "check": "run-s lint coverage build publint",
     "release": "node src/cli.js"
   },
   "dependencies": {
@@ -80,11 +81,12 @@
     "oxfmt": "^0.62.0",
     "oxlint": "^1.80.0",
     "pkg-types": "^2.3.1",
+    "publint": "^0.3.24",
     "rimraf": "^6.1.3",
     "rolldown": "^1.2.6",
+    "rolldown-plugin-copy-files": "^0.2.0",
     "simple-git-hooks": "^2.13.1",
     "size-limit": "^13.0.3",
-    "tempy": "^3.2.0",
     "valibot": "^1.4.2",
     "vitest": "^4.1.11"
   },

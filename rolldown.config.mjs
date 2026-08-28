@@ -1,9 +1,16 @@
 import { defineConfig } from "rolldown";
 import pkg from "./package.json" with { type: "json" };
+import { copyFiles } from "rolldown-plugin-copy-files";
 
-const deps = Object.keys(pkg.dependencies ?? {});
+const externalDeps = new Set([
+  ...Object.keys(pkg.dependencies ?? {}),
+  ...Object.keys(pkg.optionalDependencies ?? {}),
+  ...Object.keys(pkg.peerDependencies ?? {}),
+]);
 
-// const isProd = process.env.NODE_ENV === "production";
+function isExternal(id) {
+  return [...externalDeps].some((dep) => id === dep || id.startsWith(`${dep}/`));
+}
 
 export default defineConfig({
   input: {
@@ -13,16 +20,21 @@ export default defineConfig({
 
   platform: "node",
 
-  // transform: {
-  //   target: "node20",
-  // },
-
   output: {
     dir: "dist",
     format: "esm",
   },
 
-  external(id) {
-    return deps.some((dep) => id === dep || id.startsWith(dep + "/"));
-  },
+  external: isExternal,
+  plugins: [
+    copyFiles({
+      targets: [
+        {
+          src: "src/*.d.ts",
+          dest: "dist",
+          options: { up: 1 },
+        },
+      ],
+    }),
+  ],
 });

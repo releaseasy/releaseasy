@@ -13,8 +13,8 @@ const cli = cac(CONSTANTS.CLI_NAME);
 cli.help().version(pkg.version, "-V, --version");
 
 cli
-  .command("[run]", "Start release process")
-  .alias("run")
+  .command("[release]", "Release Package")
+  .alias("release")
   .option("-C, --cwd <path>", "Run the release process in the specified directory")
   .option("-d, --dry-run", "Simulate release without applying changes.", { default: false })
   .option("-c, --config <path>", "Path to the config file")
@@ -30,14 +30,17 @@ cli
   });
 
 cli
-  .command("changelog [RANGE]", "Options to pass to git-cliff", {
+  .command("changelog [...args]", "Options to pass to git-cliff", {
     allowUnknownOptions: true,
   })
-  .option("-c, --config <path>", "Path to the config file")
+  .allowUnknownOptions()
   .action(async (range, options) => {
-    const { changelog } = await import("./changelog.js");
+    console.log(range);
+    console.log(options);
 
-    console.log(changelog);
+    // const { changelog } = await import("./changelog.js");
+
+    // console.log(changelog);
   });
 
 try {
