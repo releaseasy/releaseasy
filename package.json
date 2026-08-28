@@ -51,6 +51,7 @@
     "size": "size-limit",
     "clean": "rimraf dist",
     "rolldown": "rolldown -c",
+    "rolldown:watch": "rolldown -c -w",
     "build": "run-s clean rolldown",
     "test": "vitest --coverage",
     "test:ui": "pnpm run test --ui",
@@ -60,7 +61,7 @@
     "release": "node src/cli.js"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.6.0",
+    "@inquirer/prompts": "^8.7.0",
     "ansis": "^4.3.1",
     "cac": "^7.0.0",
     "consola": "^3.4.2",
@@ -97,6 +98,14 @@
     "jiti": {
       "optional": true
     }
+  },
+  "optionalDependencies": {
+    "git-cliff-darwin-arm64": "2.13.1",
+    "git-cliff-darwin-x64": "2.13.1",
+    "git-cliff-linux-arm64": "2.13.1",
+    "git-cliff-linux-x64": "2.13.1",
+    "git-cliff-windows-arm64": "2.13.1",
+    "git-cliff-windows-x64": "2.13.1"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint && pnpm coverage && pnpm build"

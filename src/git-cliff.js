@@ -1,4 +1,5 @@
 import { x } from "tinyexec";
+import { arch as getArch, platform as getPlatform } from "os";
 
 export async function runGitCliff(args, execOptions = {}) {
   const bin = getExePath();
@@ -6,8 +7,7 @@ export async function runGitCliff(args, execOptions = {}) {
   return await x(bin, args, {
     throwOnError: true,
     nodeOptions: {
-      stdio: "pipe",
-      ...spawnOptions,
+      stdio: "inherit",
     },
     ...execOptions,
   });

@@ -30,17 +30,25 @@ cli
   });
 
 cli
-  .command("changelog [...args]", "Options to pass to git-cliff", {
-    allowUnknownOptions: true,
-  })
+  .command("changelog [...args]", "Run git-cliff")
   .allowUnknownOptions()
-  .action(async (range, options) => {
-    console.log(range);
-    console.log(options);
+  .option("--git-cliff-help", "Show git-cliff help")
+  .action(async (_, options) => {
+    const { runGitCliff } = await import("./git-cliff.js");
 
-    // const { changelog } = await import("./changelog.js");
+    if (options.gitCliffHelp) {
+      const result = await runGitCliff(["--help"], {
+        throwOnError: false,
+      });
 
-    // console.log(changelog);
+      process.exit(result.exitCode ?? 0);
+    }
+    const args = cli.rawArgs.slice(3);
+
+    const result = await runGitCliff(args, {
+      throwOnError: false,
+    });
+    process.exit(result.exitCode ?? 0);
   });
 
 try {
@@ -54,7 +62,8 @@ try {
   } else if (err instanceof ExitSignal) {
     process.exit(err.code);
   } else if (err instanceof Error) {
-    logger.error(err.message);
+    console.log("-------------------");
+    logger.error(err);
   } else {
     logger.error(`Unknown error`, err);
   }
