@@ -16,4 +16,10 @@ const DEFAULTS = {
   },
 };
 
-export default { DEFAULTS, CLI_NAME, VARIABLE_RE };
+const LOG_LEVEL = {
+  NORMAL: 0,
+  VERBOSE: 1,
+  DEBUG: 2,
+};
+
+export default { DEFAULTS, CLI_NAME, VARIABLE_RE, LOG_LEVEL };

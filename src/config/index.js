@@ -15,7 +15,7 @@ function normalizeInlineOptions(options) {
     cwd: resolve(options.cwd ?? process.cwd()),
     config: options.config,
     dryRun: Boolean(options.dryRun),
-    verbose: Array.isArray(options.verbose) ? options.verbose.length : 0,
+    verbose: options.verbose,
   };
 }
 

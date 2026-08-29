@@ -2,8 +2,7 @@
 
 import { Command } from "commander";
 import pkg from "../package.json" with { type: "json" };
-import { CancelledError, ExitSignal } from "./errors.js";
-import { logger } from "./utils/index.js";
+import { handleError } from "./handleError.js";
 import { resolveConfig } from "./config/index.js";
 import CONSTANTS from "./constants/index.js";
 
@@ -26,7 +25,14 @@ const releaseCommand = new Command("release")
   .option("-C, --cwd <path>", "Run the release process in the specified directory")
   .option("-d, --dry-run", "Simulate release without applying changes.", false)
   .option("-c, --config <path>", "Path to the config file")
-  .option("-v, --verbose", "Increases the logging verbosity");
+  .option(
+    "-v, --verbose",
+    "Increases the logging verbosity",
+    (_, previous) => {
+      return previous + 1;
+    },
+    0,
+  );
 
 releaseCommand.action(async (options) => {
   const { release } = await import("./release.js");
@@ -63,22 +69,16 @@ changelogCommand.action(async (_, command) => {
 
 program.addCommand(changelogCommand);
 
-try {
-  await program.parseAsync(process.argv);
-} catch (err) {
-  if (!err) {
-    process.exit(0);
-  }
+async function runCLI() {
+  try {
+    await program.parseAsync(process.argv);
+  } catch (err) {
+    const { verbose } = releaseCommand.opts();
 
-  if (err instanceof CancelledError) {
-    logger.warn(err.message);
-  } else if (err instanceof ExitSignal) {
-    process.exit(err.code);
-  } else if (err instanceof Error) {
-    logger.error(err);
-  } else {
-    logger.error("Unknown error", err);
+    handleError(err, {
+      verbose,
+    });
   }
-
-  process.exit(1);
 }
+
+await runCLI();
