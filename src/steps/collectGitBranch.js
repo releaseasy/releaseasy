@@ -1,4 +1,4 @@
-import { getGitCurrentBranch } from "../utils/git.js";
+import { getCurrentBranch } from "../utils/git.js";
 
 export default async function collectGitBranch(options, context) {
   const { requireBranch } = options.git;
@@ -6,7 +6,7 @@ export default async function collectGitBranch(options, context) {
   try {
     // 记录到上下文
 
-    context.branchName = await getGitCurrentBranch(options);
+    context.branchName = await getCurrentBranch(options);
   } catch {
     throw new Error("Failed to determine current Git branch.");
   }

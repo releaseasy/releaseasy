@@ -45,7 +45,34 @@ export async function getRemoteUrl(options) {
   }
 }
 
-export async function getGitCurrentBranch(options) {
+export async function getCurrentBranch(options) {
   const { stdout } = await git(options, ["symbolic-ref", "--short", "HEAD"]);
   return stdout.trim();
+}
+
+export async function getCurrentCommitSha(options) {
+  const { stdout } = await git(options, ["rev-parse", "HEAD"]);
+
+  return stdout.trim();
+}
+
+async function deleteTag(options, tagName) {
+  if (!tagName) {
+    return;
+  }
+
+  await git(options, ["tag", "-d", tagName]);
+}
+
+async function reset(options, initialCommitSha) {
+  if (!initialCommitSha) {
+    return;
+  }
+
+  await git(options, ["reset", "--hard", initialCommitSha]);
+}
+
+export async function rollback(options, context, initialCommitSha) {
+  await deleteTag(options, context.git?.tagName);
+  await reset(options, initialCommitSha);
 }
