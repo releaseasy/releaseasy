@@ -1,16 +1,20 @@
 import { x } from "tinyexec";
+import { defu } from "./utils/index.js";
 import { arch as getArch, platform as getPlatform } from "os";
 
 export async function runGitCliff(args, execOptions = {}) {
   const bin = getExePath();
 
-  return await x(bin, args, {
-    throwOnError: true,
-    nodeOptions: {
-      stdio: "inherit",
-    },
-    ...execOptions,
-  });
+  return await x(
+    bin,
+    args,
+    defu(execOptions, {
+      throwOnError: true,
+      nodeOptions: {
+        stdio: "inherit",
+      },
+    }),
+  );
 }
 
 function getExePath() {

@@ -5,7 +5,7 @@ import { formatDuration, logger } from "./utils/index.js";
 import ansis from "ansis";
 
 export async function release(optoins) {
-  console.log("======release========");
+  console.log("======release222========");
 
   const start = performance.now();
   const context = Object.create(null);
@@ -15,12 +15,16 @@ export async function release(optoins) {
     await collectGitBranch(optoins, context);
     await collectPackageMetadata(optoins, context);
 
+    console.log("rrrrrrrr");
+
     console.log(optoins);
 
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
   } catch (err) {
+    console.log("2222222");
+
     //  await gitReset(context);
-    // throw err;
+    throw err;
   }
 }
