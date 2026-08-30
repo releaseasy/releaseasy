@@ -32,12 +32,18 @@ export function blank(lines = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
-export function getStdio(options) {
-  return options.verbose >= CONSTANTS.LOG_LEVEL.DEBUG ? "inherit" : "pipe";
+/**
+ * NORMAL (0) → spinner
+ *
+ * VERBOSE (1) → 不显示 spinner，输出底层命令
+ * DEBUG (2) → 不显示 spinner，输出底层命令
+ */
+export function shouldShowSpinner(options) {
+  return options.verbose < CONSTANTS.LOG_LEVEL.VERBOSE;
 }
 
-export function shouldShowSpinner(options) {
-  return getStdio(options) === "pipe";
+export function getStdio(options) {
+  return shouldShowSpinner(options) ? "pipe" : "inherit";
 }
 
 export function createSpinner(text) {

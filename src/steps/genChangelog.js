@@ -15,7 +15,7 @@ export default async function genChangelog(options, context) {
   const args = parseArgs(interpolate(options.git.changelog.args, context));
 
   try {
-    await runGitCliff(args, {
+    await runGitCliff(addVerboseArgs(args, options), {
       nodeOptions: {
         stdio: getStdio(options),
       },
@@ -36,4 +36,12 @@ export default async function genChangelog(options, context) {
 
 function parseArgs(input) {
   return input.trim().split(/\s+/);
+}
+
+function addVerboseArgs(args, options) {
+  if (shouldShowSpinner(options)) {
+    return args;
+  }
+
+  return [...args, `-${"v".repeat(options.verbose)}`];
 }
