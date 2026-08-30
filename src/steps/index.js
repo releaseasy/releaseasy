@@ -5,3 +5,6 @@ export { default as selectVersion } from "./selectVersion.js";
 export { default as selectTag } from "./selectTag.js";
 export { default as genChangelog } from "./genChangelog.js";
 export { default as confirmChangelog } from "./confirmChangelog.js";
+export { default as bump } from "./bump.js";
+export { default as summary } from "./summary.js";
+export { default as git } from "./git.js";

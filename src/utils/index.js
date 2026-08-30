@@ -26,3 +26,7 @@ export function formatDuration(ms) {
   const rest = (s % 60).toFixed(1);
   return `${m}m ${rest}s`;
 }
+
+export function blank(lines = 1) {
+  process.stdout.write("\n".repeat(lines));
+}
