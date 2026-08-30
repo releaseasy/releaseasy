@@ -30,3 +30,7 @@ export function formatDuration(ms) {
 export function blank(lines = 1) {
   process.stdout.write("\n".repeat(lines));
 }
+
+export function shouldInheritStdio(options) {
+  return options.verbose >= CONSTANTS.LOG_LEVEL.DEBUG;
+}

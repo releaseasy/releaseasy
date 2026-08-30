@@ -1,6 +1,6 @@
 import ansis from "ansis";
 import { logger, blank } from "../utils/index.js";
-import { gitChangeset } from "../utils/git.js";
+import { getWorkingTreeChanges } from "../utils/git.js";
 import { confirm } from "@inquirer/prompts";
 import { cancel } from "../handleError.js";
 
@@ -17,11 +17,7 @@ export default async function summary(options, context) {
   });
 
   await renderSection("Changeset:", async () => {
-    await gitChangeset(options, {
-      nodeOptions: {
-        stdio: "inherit",
-      },
-    });
+    await getWorkingTreeChanges(options);
   });
 
   blank();

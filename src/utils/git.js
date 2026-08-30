@@ -1,18 +1,26 @@
 import { x } from "tinyexec";
-import { defu } from "../utils/index.js";
+import { defu, shouldInheritStdio } from "../utils/index.js";
+
+function getExecOptions(options) {
+  return {
+    throwOnError: true,
+    nodeOptions: {
+      cwd: options.cwd,
+      stdio: "pipe",
+    },
+  };
+}
 
 function git(options, args, execOptions = {}) {
-  return x(
-    "git",
-    args,
-    defu(execOptions, {
-      throwOnError: true,
-      nodeOptions: {
-        stdio: "pipe",
-        cwd: options.cwd,
-      },
-    }),
-  );
+  return x("git", args, defu(execOptions, getExecOptions(options)));
+}
+
+function gitWithVerbose(options, args) {
+  return git(options, args, {
+    nodeOptions: {
+      stdio: shouldInheritStdio(options) ? "inherit" : "pipe",
+    },
+  });
 }
 
 export async function isGitAvailable(options) {
@@ -32,6 +40,14 @@ export async function isGitRepository(options) {
   } catch {
     return false;
   }
+}
+
+export async function getWorkingTreeChanges(options) {
+  return await git(options, ["status", "--porcelain"], {
+    nodeOptions: {
+      stdio: "inherit",
+    },
+  });
 }
 
 export async function isWorkingTreeClean(options) {
@@ -81,22 +97,18 @@ export async function rollback(options, context, initialCommitSha) {
   await reset(options, initialCommitSha);
 }
 
-export async function gitChangeset(options, execOptions = {}) {
-  await git(options, ["status", "--porcelain"], execOptions);
+export async function add(options) {
+  await gitWithVerbose(options, ["add", "."]);
 }
 
-export async function add(options, execOptions = {}) {
-  await git(options, ["add", "."], execOptions);
+export async function commit(options, commitMessage) {
+  await gitWithVerbose(options, ["commit", ...options.git.commitArgs, "-m", commitMessage]);
 }
 
-export async function commit(options, commitMessage, execOptions = {}) {
-  await git(options, ["commit", ...options.git.commitArgs, "-m", commitMessage], execOptions);
+export async function tag(options, tagName) {
+  await gitWithVerbose(options, ["tag", "-f", tagName]);
 }
 
-export async function tag(options, tagName, execOptions = {}) {
-  await git(options, ["tag", "-f", tagName], execOptions);
-}
-
-export async function push(options, tagName, execOptions = {}) {
-  await git(options, ["push", "origin", "HEAD", `refs/tags/${tagName}`], execOptions);
+export async function push(options, tagName) {
+  await gitWithVerbose(options, ["push", "origin", "HEAD", `refs/tags/${tagName}`]);
 }

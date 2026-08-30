@@ -31,7 +31,7 @@ const releaseCommand = new Command("release")
     (_, previous) => {
       return previous + 1;
     },
-    0,
+    CONSTANTS.LOG_LEVEL.NORMAL,
   );
 
 releaseCommand.action(async (options) => {

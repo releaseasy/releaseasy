@@ -1,5 +1,6 @@
 import { Spinner } from "picospinner";
 import { add, commit, tag, push } from "../utils/git.js";
+import { shouldInheritStdio } from "../utils/index.js";
 
 const spinner = new Spinner("Releasing…", {
   stream: process.stderr,
@@ -10,7 +11,11 @@ const spinner = new Spinner("Releasing…", {
 });
 
 export default async function git(options, context) {
-  spinner.start();
+  const quiet = !shouldInheritStdio(options);
+
+  if (quiet) {
+    spinner.start();
+  }
 
   try {
     await add(options);
@@ -18,9 +23,13 @@ export default async function git(options, context) {
     await tag(options, context.git.tagName);
     await push(options, context.git.tagName);
 
-    spinner.stop();
+    if (quiet) {
+      spinner.stop();
+    }
   } catch (error) {
-    spinner.fail("Release failed");
+    if (quiet) {
+      spinner.fail("Release failed");
+    }
     throw error;
   }
 }
