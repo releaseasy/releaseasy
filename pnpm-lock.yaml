@@ -23,9 +23,9 @@ importers:
       lilconfig:
         specifier: ^3.1.3
         version: 3.1.3
-      nanospinner:
-        specifier: ^1.2.2
-        version: 1.2.2
+      picospinner:
+        specifier: ^3.1.2
+        version: 3.1.2
       semver:
         specifier: ^7.8.5
         version: 7.8.5
@@ -1381,6 +1381,10 @@ packages:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
+  picospinner@3.1.2:
+    resolution: {integrity: sha512-0Z++uU8mvB0EvCPAEUq9BGiPcSravzJ+RPdXfjYlzXffqsogisiKRQqI6ctrSSJ6n985vxrgKtQ5n4sRINcJZg==}
+    engines: {node: '>=18.0.0'}
+
   pidtree@1.0.0:
     resolution: {integrity: sha512-avfAvjB9Dd0wdj3rjJX//yS+G79OO0KrS5pJHFJENjYGX6N4SMgEDBBI/yFy0lloOYSaC6XQxzpOAMPfSYFV/Q==}
     engines: {node: '>=18'}
@@ -2682,6 +2686,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
+
+  picospinner@3.1.2: {}
 
   pidtree@1.0.0: {}
 

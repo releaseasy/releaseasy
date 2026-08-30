@@ -4,6 +4,8 @@ import {
   collectPackageMetadata,
   selectVersion,
   selectTag,
+  genChangelog,
+  confirmChangelog,
 } from "./steps/index.js";
 import { formatDuration, logger } from "./utils/index.js";
 import { getCurrentCommitSha, rollback } from "./utils/git.js";
@@ -29,6 +31,8 @@ export async function release(options) {
     // 选择版本
     await selectVersion(options, context);
     await selectTag(options, context);
+    await genChangelog(options, context);
+    await confirmChangelog(options, context);
 
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));

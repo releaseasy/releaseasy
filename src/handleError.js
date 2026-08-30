@@ -20,7 +20,17 @@ export function handleError(err, options = {}) {
   process.exit(1);
 }
 
-export class CancelledError extends Error {
+/**
+ * 取消当前操作
+ *
+ * @param {string} [message]
+ * @throws {CancelledError}
+ */
+export function cancel(message) {
+  throw new CancelledError(message);
+}
+
+class CancelledError extends Error {
   constructor(message = "Release cancelled by user") {
     super(message);
     this.name = "CancelledError";
