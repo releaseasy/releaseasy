@@ -57,7 +57,6 @@ export default async function selectVersion(options, context) {
   // 赋值给上下文
   context.version = targetVersion;
 
-  context.git ??= {};
   context.git.tagName = interpolate(options.git.tagName, context);
   context.git.commitMessage = interpolate(options.git.commitMessage, context);
 }

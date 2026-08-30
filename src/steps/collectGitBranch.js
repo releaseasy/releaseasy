@@ -5,7 +5,6 @@ export default async function collectGitBranch(options, context) {
 
   try {
     // 记录到上下文
-
     context.branchName = await getCurrentBranch(options);
   } catch {
     throw new Error("Failed to determine current Git branch.");

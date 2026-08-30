@@ -56,12 +56,12 @@ export async function getCurrentCommitSha(options) {
   return stdout.trim();
 }
 
-async function deleteTag(options, tagName) {
-  if (!tagName) {
+async function deleteTag(options, context) {
+  if (!context.git.tagCreated) {
     return;
   }
 
-  await git(options, ["tag", "-d", tagName]);
+  await git(options, ["tag", "-d", context.git.tagName]);
 }
 
 async function reset(options, initialCommitSha) {
@@ -73,6 +73,6 @@ async function reset(options, initialCommitSha) {
 }
 
 export async function rollback(options, context, initialCommitSha) {
-  await deleteTag(options, context.git?.tagName);
+  await deleteTag(options, context);
   await reset(options, initialCommitSha);
 }

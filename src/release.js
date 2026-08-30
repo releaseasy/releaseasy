@@ -3,16 +3,21 @@ import {
   collectGitBranch,
   collectPackageMetadata,
   selectVersion,
+  selectTag,
 } from "./steps/index.js";
 import { formatDuration, logger } from "./utils/index.js";
 import { getCurrentCommitSha, rollback } from "./utils/git.js";
 import ansis from "ansis";
 
 export async function release(options) {
-  console.log("======release222========");
+  console.log("======release========");
 
   const start = performance.now();
-  const context = Object.create(null);
+  const context = {
+    git: {
+      tagCreated: false,
+    },
+  };
   let initialCommitSha;
   try {
     // await assertGitReady(options);
@@ -23,6 +28,7 @@ export async function release(options) {
 
     // 选择版本
     await selectVersion(options, context);
+    await selectTag(options, context);
 
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
