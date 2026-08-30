@@ -1,3 +1,4 @@
+import { Spinner } from "picospinner";
 import { createConsola } from "consola";
 import { createDefu } from "defu";
 import CONSTANTS from "../constants/index.js";
@@ -31,6 +32,20 @@ export function blank(lines = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
-export function shouldInheritStdio(options) {
-  return options.verbose >= CONSTANTS.LOG_LEVEL.DEBUG;
+export function getStdio(options) {
+  return options.verbose >= CONSTANTS.LOG_LEVEL.DEBUG ? "inherit" : "pipe";
+}
+
+export function shouldShowSpinner(options) {
+  return getStdio(options) === "pipe";
+}
+
+export function createSpinner(text) {
+  return new Spinner(text, {
+    stream: process.stderr,
+    colors: {
+      spinner: "green",
+      text: "gray",
+    },
+  });
 }

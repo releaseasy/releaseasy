@@ -1,31 +1,35 @@
 import { Spinner } from "picospinner";
 import { runGitCliff } from "../git-cliff";
+import { createSpinner, getStdio, shouldShowSpinner } from "../utils/index.js";
 import { interpolate } from "../utils/interpolate.js";
-const spinner = new Spinner("Generating changelog, please wait…", {
-  stream: process.stderr,
-  colors: {
-    spinner: "green",
-    text: "gray",
-  },
-});
+
+const spinner = createSpinner("Generating changelog, please wait…");
 
 export default async function genChangelog(options, context) {
-  spinner.start();
+  const showSpinner = shouldShowSpinner(options);
+
+  if (showSpinner) {
+    spinner.start();
+  }
 
   const args = parseArgs(interpolate(options.git.changelog.args, context));
 
   try {
     await runGitCliff(args, {
       nodeOptions: {
-        stdio: "pipe",
+        stdio: getStdio(options),
       },
     });
-    // await new Promise((resolve) => {
-    //   setTimeout(resolve, 3000);
-    // });
-    spinner.succeed("Changelog generated");
+    await new Promise((resolve) => {
+      setTimeout(resolve, 3000);
+    });
+    if (showSpinner) {
+      spinner.succeed("Changelog generated");
+    }
   } catch (error) {
-    spinner.fail("Failed to generate changelog");
+    if (showSpinner) {
+      spinner.fail("Failed to generate changelog");
+    }
     throw error;
   }
 }

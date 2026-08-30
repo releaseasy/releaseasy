@@ -1,5 +1,5 @@
 import { x } from "tinyexec";
-import { defu, shouldInheritStdio } from "../utils/index.js";
+import { defu, getStdio } from "../utils/index.js";
 
 function getExecOptions(options) {
   return {
@@ -18,7 +18,7 @@ function git(options, args, execOptions = {}) {
 function gitWithVerbose(options, args) {
   return git(options, args, {
     nodeOptions: {
-      stdio: shouldInheritStdio(options) ? "inherit" : "pipe",
+      stdio: getStdio(options),
     },
   });
 }
@@ -101,14 +101,20 @@ export async function add(options) {
   await gitWithVerbose(options, ["add", "."]);
 }
 
-export async function commit(options, commitMessage) {
-  await gitWithVerbose(options, ["commit", ...options.git.commitArgs, "-m", commitMessage]);
+export async function commit(options, context) {
+  await gitWithVerbose(options, [
+    "commit",
+    ...options.git.commitArgs,
+    "-m",
+    context.git.commitMessage,
+  ]);
 }
 
-export async function tag(options, tagName) {
-  await gitWithVerbose(options, ["tag", "-f", tagName]);
+export async function tag(options, context) {
+  await gitWithVerbose(options, ["tag", "-f", context.git.tagName]);
+  context.git.tagCreated = true;
 }
 
-export async function push(options, tagName) {
-  await gitWithVerbose(options, ["push", "origin", "HEAD", `refs/tags/${tagName}`]);
+export async function push(options, context) {
+  await gitWithVerbose(options, ["push", "origin", "HEAD", `refs/tags/${context.git.tagName}`]);
 }

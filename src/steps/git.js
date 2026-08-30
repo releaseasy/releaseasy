@@ -1,33 +1,26 @@
-import { Spinner } from "picospinner";
 import { add, commit, tag, push } from "../utils/git.js";
-import { shouldInheritStdio } from "../utils/index.js";
+import { shouldShowSpinner, createSpinner } from "../utils/index.js";
 
-const spinner = new Spinner("Releasing…", {
-  stream: process.stderr,
-  colors: {
-    spinner: "green",
-    text: "gray",
-  },
-});
+const spinner = createSpinner("Releasing…");
 
 export default async function git(options, context) {
-  const quiet = !shouldInheritStdio(options);
+  const showSpinner = shouldShowSpinner(options);
 
-  if (quiet) {
+  if (showSpinner) {
     spinner.start();
   }
 
   try {
     await add(options);
-    await commit(options, context.git.commitMessage);
-    await tag(options, context.git.tagName);
-    await push(options, context.git.tagName);
+    await commit(options, context);
+    await tag(options, context);
+    await push(options, context);
 
-    if (quiet) {
+    if (showSpinner) {
       spinner.stop();
     }
   } catch (error) {
-    if (quiet) {
+    if (showSpinner) {
       spinner.fail("Release failed");
     }
     throw error;
