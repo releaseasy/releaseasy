@@ -6,7 +6,6 @@ export default defineConfig({
   git: {
     requireBranch: "main",
     commitMessage: "release: v${version}",
-    commitArgs: ["-s"],
     tagName: "v${version}",
     changelog: {
       configFile: "cliff.toml",

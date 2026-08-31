@@ -6,16 +6,18 @@ import { interpolate } from "../utils/interpolate.js";
 const spinner = createSpinner("Generating changelog, please wait…");
 
 export default async function genChangelog(options, context) {
+  if (options.git.changelog === false) return;
+
   const showSpinner = shouldShowSpinner(options);
 
   if (showSpinner) {
     spinner.start();
   }
 
-  const args = parseArgs(interpolate(options.git.changelog.args, context));
+  const args = buildGitCliffArgs(options, context);
 
   try {
-    await runGitCliff(addVerboseArgs(args, options), {
+    await runGitCliff(args, {
       nodeOptions: {
         stdio: getStdio(options),
       },
@@ -32,6 +34,14 @@ export default async function genChangelog(options, context) {
     }
     throw error;
   }
+}
+
+function buildGitCliffArgs(options, context) {
+  const args = parseArgs(interpolate(options.git.changelog.args, context));
+
+  args.push("--config", options.git.changelog.configFile);
+
+  return addVerboseArgs(args, options);
 }
 
 function parseArgs(input) {
