@@ -8,19 +8,17 @@ import { configSchema } from "./schema.js";
 export async function resolveConfig(inlineConfig) {
   inlineConfig = normalizeInlineOptions(inlineConfig);
 
-  const { config, cwd } = inlineConfig;
-  const fileConfig = await loadConfig(config, cwd);
-  const resolvedConfig = defu(inlineConfig, fileConfig, CONSTANTS.DEFAULTS);
+  const { config, ...inlineOptions } = inlineConfig;
+  const fileConfig = await loadConfig(config, inlineOptions.cwd);
+  const resolvedConfig = defu(inlineOptions, fileConfig, CONSTANTS.DEFAULTS);
 
   return v.parse(configSchema, resolvedConfig);
 }
 
 function normalizeInlineOptions(options) {
   return {
+    ...options,
     cwd: resolve(options.cwd ?? process.cwd()),
-    config: options.config,
-    dryRun: Boolean(options.dryRun),
-    verbose: options.verbose,
   };
 }
 
