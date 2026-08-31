@@ -15,8 +15,6 @@ import { getCurrentCommitSha, rollback } from "./utils/git.js";
 import ansis from "ansis";
 
 export async function release(options) {
-  console.log("======release========");
-
   const start = performance.now();
   const context = {
     git: {

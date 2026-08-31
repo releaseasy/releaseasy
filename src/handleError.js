@@ -5,7 +5,7 @@ export function handleError(err, options = {}) {
   if (!err) {
     process.exit(0);
   }
-  if (err instanceof CancelledError) {
+  if (err instanceof CancelledError || err.name === "ExitPromptError") {
     logger.warn(err.message);
     process.exit(0);
   } else if (err instanceof Error) {

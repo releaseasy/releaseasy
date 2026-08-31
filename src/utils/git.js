@@ -90,6 +90,9 @@ async function reset(options, initialCommitSha) {
   }
 
   await git(options, ["reset", "--hard", initialCommitSha]);
+
+  // 删除 release 过程中产生的 untracked files / directories
+  await git(options, ["clean", "-fd"]);
 }
 
 export async function rollback(options, context, initialCommitSha) {

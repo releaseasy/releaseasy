@@ -2,12 +2,17 @@ import { resolve } from "node:path";
 import { lilconfig } from "lilconfig";
 import CONSTANTS from "../constants/index.js";
 import { defu } from "../utils/index.js";
+import * as v from "valibot";
+import { configSchema } from "./schema.js";
 
 export async function resolveConfig(inlineConfig) {
   inlineConfig = normalizeInlineOptions(inlineConfig);
+
   const { config, cwd } = inlineConfig;
   const fileConfig = await loadConfig(config, cwd);
-  return defu(inlineConfig, fileConfig, CONSTANTS.DEFAULTS);
+  const resolvedConfig = defu(inlineConfig, fileConfig, CONSTANTS.DEFAULTS);
+
+  return v.parse(configSchema, resolvedConfig);
 }
 
 function normalizeInlineOptions(options) {

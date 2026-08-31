@@ -1,6 +1,6 @@
 import { Spinner } from "picospinner";
 import { runGitCliff } from "../git-cliff";
-import { createSpinner, getStdio, shouldShowSpinner } from "../utils/index.js";
+import { createSpinner, getStdio, shouldShowSpinner, isVerbose } from "../utils/index.js";
 import { interpolate } from "../utils/interpolate.js";
 
 const spinner = createSpinner("Generating changelog, please wait…");
@@ -41,17 +41,16 @@ function buildGitCliffArgs(options, context) {
 
   args.push("--config", options.git.changelog.configFile);
 
-  return addVerboseArgs(args, options);
+  return [...args, ...getVerboseArgs(options)];
 }
-
 function parseArgs(input) {
   return input.trim().split(/\s+/);
 }
 
-function addVerboseArgs(args, options) {
-  if (shouldShowSpinner(options)) {
-    return args;
+function getVerboseArgs(options) {
+  if (!isVerbose(options)) {
+    return [];
   }
 
-  return [...args, `-${"v".repeat(options.verbose)}`];
+  return [`-${"v".repeat(options.verbose)}`];
 }

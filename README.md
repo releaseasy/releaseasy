@@ -28,3 +28,7 @@ Release made easy
 - 防止预发布版本误发布到 npm `latest`
 - 发布失败自动回滚到初始状态
 - dsaaddddddddd
+
+-v:把内部的命令的执行信息打印出来
+-vv 把将要执行的命令也打印出来
+-vvv ： 把报错的堆栈也打印出来
