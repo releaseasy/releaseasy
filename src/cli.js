@@ -47,6 +47,24 @@ program.addCommand(releaseCommand, {
 });
 
 /**
+ * init
+ *
+ * releaseasy init
+ */
+const initCommand = new Command("init")
+  .description("Initialize releaseasy configuration")
+  .option("-C, --cwd <path>", "Initialize configuration in the specified directory")
+  .option("-f, --force", "Overwrite existing configuration", false);
+
+initCommand.action(async (options) => {
+  const { init } = await import("./init.js");
+
+  await init(options);
+});
+
+program.addCommand(initCommand);
+
+/**
  * changelog
  *
  * releaseasy changelog [git-cliff args...]
