@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import fs from "fs-extra";
 
 const configSchema = v.object({
   cwd: v.string(),
@@ -69,11 +70,26 @@ export function validateConfig(config) {
     return v.parse(configSchema, config, { abortEarly: true });
   } catch (error) {
     if (error instanceof v.ValiError) {
-      // throw new Error(formatConfigError(error));
-      throw new Error(v.summarize(error.issues));
+      throw new Error(formatConfigError(error));
     }
     throw error;
   }
+}
+
+function formatConfigError(error) {
+  const issues = flattenIssues(error);
+  const issue = mergeUnionIssues(issues);
+
+  const path = issue.path.join(".");
+
+  return [
+    "Invalid configuration",
+    "",
+    `  ${path}`,
+    "",
+    `  Expected: ${issue.expected}`,
+    `  Received: ${issue.received}`,
+  ].join("\n");
 }
 
 function flattenIssues(error, parentPath = []) {
@@ -94,21 +110,19 @@ function flattenIssues(error, parentPath = []) {
   return result;
 }
 
-function formatConfigError(error) {
-  const issues = flattenIssues(error);
-
-  console.log(issues);
-
+function mergeUnionIssues(issues) {
   const issue = issues.at(-1);
 
-  const path = issue.path.join(".");
+  const matched = issues.filter(
+    (item) => item.path.join(".") === issue.path.join(".") && item.received === issue.received,
+  );
 
-  return [
-    "Invalid configuration",
-    "",
-    `  ${path}`,
-    "",
-    `  Expected: ${issue.expected}`,
-    `  Received: ${issue.received}`,
-  ].join("\n");
+  if (matched.length === 1) {
+    return issue;
+  }
+
+  return {
+    ...issue,
+    expected: matched.map((item) => item.expected).join(" | "),
+  };
 }
