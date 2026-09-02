@@ -41,6 +41,8 @@ export async function release(options) {
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
   } catch (err) {
+    console.log(err);
+
     // await rollback(options, context, initialCommitSha);
     throw err;
   }
