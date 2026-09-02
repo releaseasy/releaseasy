@@ -66,57 +66,49 @@ const configSchema = v.object({
 
 export function validateConfig(config) {
   try {
-    return v.parse(configSchema, config);
+    return v.parse(configSchema, config, { abortEarly: true });
   } catch (error) {
     if (error instanceof v.ValiError) {
-      throw new Error(formatConfigError(error));
+      // throw new Error(formatConfigError(error));
+      throw new Error(v.summarize(error.issues));
     }
-
     throw error;
   }
 }
 
-function getIssuePath(issue) {
-  return (
-    issue.path
-      ?.map((item) => item.key)
-      .filter((key) => key !== undefined)
-      .map((key) => (typeof key === "number" ? `[${key}]` : key))
-      .join(".") || "<root>"
-  );
-}
+function flattenIssues(error, parentPath = []) {
+  const result = [];
 
-function formatValue(value) {
-  if (value === undefined) {
-    return "undefined";
-  }
+  for (const issue of error.issues) {
+    const currentPath = [...parentPath, ...(issue.path ?? []).map((item) => item.key)];
 
-  if (typeof value === "string") {
-    return JSON.stringify(value);
+    if (issue.issues) {
+      result.push(...flattenIssues(issue, currentPath));
+    } else {
+      result.push({
+        ...issue,
+        path: currentPath,
+      });
+    }
   }
-
-  if (typeof value === "function") {
-    return "[Function]";
-  }
-
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return `[${typeof value}]`;
-  }
+  return result;
 }
 
 function formatConfigError(error) {
-  const messages = error.issues.map((issue) => {
-    const path = getIssuePath(issue);
+  const issues = flattenIssues(error);
 
-    return [
-      `  ${path}`,
-      "",
-      `  Expected: ${issue.expected}`,
-      `  Received: ${formatValue(issue.input)} (${issue.received})`,
-    ].join("\n");
-  });
+  console.log(issues);
 
-  return `Invalid configuration\n\n${messages.join("\n\n")}`;
+  const issue = issues.at(-1);
+
+  const path = issue.path.join(".");
+
+  return [
+    "Invalid configuration",
+    "",
+    `  ${path}`,
+    "",
+    `  Expected: ${issue.expected}`,
+    `  Received: ${issue.received}`,
+  ].join("\n");
 }
