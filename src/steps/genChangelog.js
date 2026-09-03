@@ -2,7 +2,7 @@ import { Spinner } from "picospinner";
 import { runGitCliff } from "../git-cliff";
 import { createSpinner, getStdio, shouldShowSpinner, isVerbose } from "../utils/index.js";
 import { interpolate } from "../utils/interpolate.js";
-
+import { x } from "tinyexec";
 const spinner = createSpinner("Generating changelog, please wait…");
 
 export default async function genChangelog(options, context) {
@@ -17,11 +17,14 @@ export default async function genChangelog(options, context) {
   const args = buildGitCliffArgs(options, context);
 
   try {
-    const res = await runGitCliff(args, {
+    await runGitCliff(args, {
       nodeOptions: {
         stdio: getStdio(options),
       },
     });
+
+    // 执行变更日志格式化
+    await formatChangelog(options, context);
 
     if (showSpinner) {
       spinner.succeed("Changelog generated");
@@ -34,6 +37,19 @@ export default async function genChangelog(options, context) {
   }
 }
 
+async function formatChangelog(options, context) {
+  if (!options.git.changelog.format) return;
+
+  const cmd = interpolate(options.git.changelog.format, context);
+
+  await x(cmd, undefined, {
+    nodeOptions: {
+      shell: true,
+      stdio: "pipe",
+    },
+  });
+}
+
 function buildGitCliffArgs(options, context) {
   const { args: argTemplate, configFile, output } = options.git.changelog;
 
@@ -41,6 +57,9 @@ function buildGitCliffArgs(options, context) {
 
   args.push("--config", configFile);
   args.push("--output", output);
+
+  // 把变更日志输出选项的value也放进到上下文中
+  context.changelog = output;
 
   return [...args, ...getVerboseArgs(options)];
 }
