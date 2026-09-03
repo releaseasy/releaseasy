@@ -58,8 +58,10 @@ const configSchema = v.object({
     changelog: v.union([
       v.literal(false),
       v.object({
+        output: v.string(),
         configFile: v.string(),
         args: v.string(),
+        format: v.optional(v.string()),
       }),
     ]),
   }),

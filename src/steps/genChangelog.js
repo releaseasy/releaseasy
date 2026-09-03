@@ -17,14 +17,12 @@ export default async function genChangelog(options, context) {
   const args = buildGitCliffArgs(options, context);
 
   try {
-    await runGitCliff(args, {
+    const res = await runGitCliff(args, {
       nodeOptions: {
         stdio: getStdio(options),
       },
     });
-    await new Promise((resolve) => {
-      setTimeout(resolve, 3000);
-    });
+
     if (showSpinner) {
       spinner.succeed("Changelog generated");
     }
@@ -37,14 +35,14 @@ export default async function genChangelog(options, context) {
 }
 
 function buildGitCliffArgs(options, context) {
-  const args = parseArgs(interpolate(options.git.changelog.args, context));
+  const { args: argTemplate, configFile, output } = options.git.changelog;
 
-  args.push("--config", options.git.changelog.configFile);
+  const args = parseArgs(interpolate(argTemplate, context));
+
+  args.push("--config", configFile);
+  args.push("--output", output);
 
   return [...args, ...getVerboseArgs(options)];
-}
-function parseArgs(input) {
-  return input.trim().split(/\s+/);
 }
 
 function getVerboseArgs(options) {
@@ -53,4 +51,75 @@ function getVerboseArgs(options) {
   }
 
   return [`-${"v".repeat(options.verbose)}`];
+}
+
+function parseArgs(input) {
+  const args = [];
+
+  let current = "";
+  let quote = null;
+  let escaped = false;
+  let hasToken = false;
+
+  const push = () => {
+    if (!hasToken) {
+      return;
+    }
+
+    args.push(current);
+    current = "";
+    hasToken = false;
+  };
+
+  for (const char of input.trim()) {
+    if (escaped) {
+      current += char;
+      hasToken = true;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      hasToken = true;
+      continue;
+    }
+
+    if (quote !== null) {
+      if (char === quote) {
+        quote = null;
+      } else {
+        current += char;
+      }
+
+      hasToken = true;
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      hasToken = true;
+      continue;
+    }
+
+    if (/\s/.test(char)) {
+      push();
+      continue;
+    }
+
+    current += char;
+    hasToken = true;
+  }
+
+  if (escaped) {
+    current += "\\";
+  }
+
+  if (quote !== null) {
+    throw new Error(`Unclosed quote: ${quote}`);
+  }
+
+  push();
+
+  return args;
 }

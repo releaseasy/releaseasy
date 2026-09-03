@@ -9,7 +9,7 @@ export default defineConfig({
     tagName: "v${version}",
     changelog: {
       configFile: "cliff.toml",
-      args: "-o --tag ${version}",
+      args: "--tag ${version}",
     },
   },
 });

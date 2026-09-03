@@ -11,8 +11,9 @@ const DEFAULTS = {
     commitArgs: ["-s"],
     tagName: "v${version}",
     changelog: {
+      output: "CHANGELOG.md",
       configFile: "cliff.toml",
-      args: "-o --tag ${version}",
+      args: "--tag ${version}",
     },
   },
 };
