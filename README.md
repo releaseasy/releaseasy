@@ -33,6 +33,15 @@ Release made easy
 - -vv 把将要执行的命令也打印出来
 - -vvv ： 把报错的堆栈也打印出来
 
+## 格式化变更日志
+
+```bash
+pnpm oxfmt CHANGELOG.md
+pnpm oxfmt ${changelog}
+pnpm prettier --write CHANGELOG.md
+pnpm prettier --write ${changelog}
+```
+
 ## 使用 releaseasy 的项目
 
 - adminlts

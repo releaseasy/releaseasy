@@ -15,6 +15,7 @@ export interface UserConfig {
   git?: {
     requireBranch?: string | string[] | RegExp | false;
     commitMessage?: string;
+    addArgs?: string[];
     commitArgs?: string[];
     tagName?: string;
     changelog?: false | ChangelogOptions;

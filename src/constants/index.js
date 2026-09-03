@@ -8,6 +8,7 @@ const DEFAULTS = {
   git: {
     requireBranch: "main",
     commitMessage: "release: v${version}",
+    addArgs: ["."],
     commitArgs: ["-s"],
     tagName: "v${version}",
     changelog: {

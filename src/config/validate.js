@@ -39,6 +39,7 @@ const configSchema = v.object({
 
     commitMessage: v.string(),
 
+    addArgs: v.array(v.string()),
     commitArgs: v.array(v.string()),
 
     tagName: v.string(),

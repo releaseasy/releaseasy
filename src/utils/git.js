@@ -101,7 +101,7 @@ export async function rollback(options, context, initialCommitSha) {
 }
 
 export async function add(options) {
-  await gitWithVerbose(options, ["add", "."]);
+  await gitWithVerbose(options, ["add", ...options.git.addArgs]);
 }
 
 export async function commit(options, context) {
