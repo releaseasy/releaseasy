@@ -65,14 +65,14 @@
     "release": "node src/cli.js"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.7.0",
+    "@inquirer/prompts": "^8.7.1",
     "ansis": "^4.3.1",
     "commander": "^15.0.0",
     "consola": "^3.4.2",
     "lilconfig": "^3.1.3",
     "picospinner": "^3.1.2",
     "semver": "^7.8.5",
-    "tinyexec": "^1.3.0"
+    "tinyexec": "^1.3.1"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^13.0.3",
@@ -84,13 +84,13 @@
     "jiti": "^2.7.0",
     "npm-run-all2": "^9.0.3",
     "oxfmt": "^0.62.0",
-    "oxlint": "^1.80.0",
-    "pkg-types": "^2.3.1",
+    "oxlint": "^1.81.0",
+    "pkg-types": "^2.3.3",
     "publint": "^0.3.24",
     "rimraf": "^6.1.3",
-    "rolldown": "^1.2.6",
+    "rolldown": "^1.2.7",
     "rolldown-plugin-copy-files": "^0.2.0",
-    "simple-git-hooks": "^2.13.1",
+    "simple-git-hooks": "^2.14.0",
     "size-limit": "^13.0.3",
     "valibot": "^1.4.2",
     "vitest": "^4.1.11"
