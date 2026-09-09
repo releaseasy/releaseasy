@@ -1,6 +1,6 @@
 import { isGitAvailable, isGitRepository, isWorkingTreeClean, getRemoteUrl } from "../utils/git.js";
 
-export default async function assertGitReady(options) {
+export async function assertGitReady(options) {
   if (!(await isGitAvailable(options))) {
     throw new Error(
       "Git is not installed or not available in your PATH. Please install Git to continue.",

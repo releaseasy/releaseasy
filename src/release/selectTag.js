@@ -1,7 +1,7 @@
 import { select } from "@inquirer/prompts";
 import { prerelease } from "semver";
 
-export default async function selectTag(options, context) {
+export async function selectTag(options, context) {
   const isPrerelease = Boolean(prerelease(context.version));
 
   const enabled = [];

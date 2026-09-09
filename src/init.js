@@ -1,11 +1,12 @@
 import ansis from "ansis";
 import CONSTANTS from "./constants/index.js";
-
-import { detectEnvironment } from "./init/detect.js";
-import { promptInit } from "./init/prompt.js";
-import { ensureJiti } from "./init/install.js";
-import { generateFiles } from "./init/generate.js";
-import { addScripts } from "./init/package.js";
+import {
+  detectEnvironment,
+  promptInit,
+  ensureJiti,
+  generateFiles,
+  addScripts,
+} from "./init/index.js";
 
 export async function init(inlineOps = {}) {
   const cwd = inlineOps.cwd ?? process.cwd();

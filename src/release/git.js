@@ -3,7 +3,7 @@ import { createSpinner, shouldShowSpinner } from "../utils/index.js";
 
 const spinner = createSpinner("Releasing…");
 
-export default async function git(options, context) {
+export async function git(options, context) {
   const showSpinner = shouldShowSpinner(options);
 
   if (showSpinner) {

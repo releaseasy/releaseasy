@@ -1,7 +1,7 @@
 import { readPackageJSON } from "pkg-types";
 import semver from "semver";
 
-export default async function collectPackageMetadata(options, context) {
+export async function collectPackageMetadata(options, context) {
   const pkg = await readPackageJSON(options.cwd);
 
   if (!pkg.name || pkg.name.trim() === "") {

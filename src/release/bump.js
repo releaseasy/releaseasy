@@ -1,6 +1,6 @@
 import { readPackageJSON, writePackageJSON } from "pkg-types";
 
-export default async function bump(options, context) {
+export async function bump(options, context) {
   const pkg = await readPackageJSON(options.cwd);
 
   // 写入版本号

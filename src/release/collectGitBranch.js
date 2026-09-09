@@ -1,6 +1,6 @@
 import { getCurrentBranch } from "../utils/git.js";
 
-export default async function collectGitBranch(options, context) {
+export async function collectGitBranch(options, context) {
   const { requireBranch } = options.git;
 
   try {

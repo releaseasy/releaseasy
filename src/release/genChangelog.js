@@ -5,7 +5,7 @@ import { interpolate } from "../utils/interpolate.js";
 import { x } from "tinyexec";
 const spinner = createSpinner("Generating changelog, please wait…");
 
-export default async function genChangelog(options, context) {
+export async function genChangelog(options, context) {
   if (options.git.changelog === false) return;
 
   const showSpinner = shouldShowSpinner(options);

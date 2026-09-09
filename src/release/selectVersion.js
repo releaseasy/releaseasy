@@ -2,7 +2,7 @@ import { input, select } from "@inquirer/prompts";
 import { gt, inc, prerelease, valid } from "semver";
 import { interpolate } from "../utils/interpolate";
 
-export default async function selectVersion(options, context) {
+export async function selectVersion(options, context) {
   let targetVersion;
   const isPrerelease = prerelease(context.latestVersion);
 

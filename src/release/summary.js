@@ -4,7 +4,7 @@ import { getWorkingTreeChanges } from "../utils/git.js";
 import { confirm } from "@inquirer/prompts";
 import { cancel } from "../handleError.js";
 
-export default async function summary(options, context) {
+export async function summary(options, context) {
   const data = {
     Version: context.version,
     "Npm Dist Tag": context.tag,
