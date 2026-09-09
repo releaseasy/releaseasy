@@ -1,6 +1,8 @@
 import { Spinner } from "picospinner";
 import { createConsola } from "consola";
 import { createDefu } from "defu";
+import path from "node:path";
+import { createRequire } from "node:module";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
 
@@ -52,4 +54,16 @@ export function createSpinner(text) {
       text: "gray",
     },
   });
+}
+
+export function isPackageInstalled(cwd, packageName) {
+  try {
+    const require = createRequire(path.join(cwd, "__releaseasy_resolver__.js"));
+
+    require.resolve(packageName);
+
+    return true;
+  } catch {
+    return false;
+  }
 }

@@ -9,7 +9,7 @@ import {
   bump,
   summary,
   git,
-} from "./steps/index.js";
+} from "./release/index.js";
 import { formatDuration, logger } from "./utils/index.js";
 import { getCurrentCommitSha, rollback } from "./utils/git.js";
 import ansis from "ansis";

@@ -1,0 +1,10 @@
+/** @type { import('releaseasy').UserConfig } */
+export default {
+  increments: ["patch", "minor", "major"],
+  distTags: ["latest", "next"],
+  git: {
+    changelog: {
+      args: "--tag ${version}",
+    },
+  },
+};

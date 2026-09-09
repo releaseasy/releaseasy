@@ -34,6 +34,11 @@ export default defineConfig({
           dest: "dist",
           options: { up: 1 },
         },
+        {
+          src: "src/init/templates",
+          dest: "dist",
+          options: { up: 2 },
+        },
       ],
     }),
   ],
