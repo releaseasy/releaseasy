@@ -1,27 +1,21 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { writePackageJSON } from "pkg-types";
+import CONSTANTS from "../constants/index.js";
 
-export async function addScripts(cwd) {
-  const packagePath = path.join(cwd, "package.json");
-
-  const source = await fs.readFile(packagePath, "utf8");
-  const packageJson = JSON.parse(source);
-
+export async function addScripts(context) {
+  const { packageJson, packageJsonPath } = context;
   const scripts = packageJson.scripts ?? {};
 
   const additions = {
-    release: "releaseasy",
+    // 刚好默认的命令就是cli的名称
+    release: CONSTANTS.CLI_NAME,
   };
 
   const conflicts = Object.keys(additions).filter((name) => name in scripts);
 
-  console.log(conflicts);
-
   if (conflicts.length > 0) {
-    return {
-      changed: false,
-      conflicts,
-    };
+    context.changed = false;
   }
 
   packageJson.scripts = {
@@ -29,10 +23,8 @@ export async function addScripts(cwd) {
     ...additions,
   };
 
-  await fs.writeFile(packagePath, JSON.stringify(packageJson, null, 2) + "\n", "utf8");
+  // 写入pkg.json
+  writePackageJSON(packageJsonPath, packageJson);
 
-  return {
-    changed: true,
-    conflicts: [],
-  };
+  context.changed = true;
 }

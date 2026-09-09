@@ -3,20 +3,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { outputFile, exists } from "../utils/fs.js";
 import { runGitCliff } from "../git-cliff.js";
+import CONSTANTS from "../constants/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TEMPLATE_DIR = path.join(__dirname, "templates");
 
-export async function generateFiles({
-  cwd,
-  configFormat,
-  moduleFormat,
-  changelogFormat,
-  force = false,
-}) {
-  const cliffFile = "cliff.toml";
-  const configExtension = resolveConfigExtension(configFormat, moduleFormat);
+export async function generateFiles(options, context) {
+  const { changelogFormat, cwd } = context;
+  const { force } = options;
+  const configExtension = resolveConfigExtension(context);
+
   const configFile = `releaseasy.config.${configExtension}`;
   const configTemplate = path.join(TEMPLATE_DIR, configFile);
 
@@ -25,7 +22,7 @@ export async function generateFiles({
   }
 
   const configTarget = path.join(cwd, configFile);
-  const cliffTarget = path.join(cwd, "cliff.toml");
+  const cliffTarget = path.join(cwd, CONSTANTS.CLIFF_FILE);
 
   await assertCanWrite(configTarget, force);
   await assertCanWrite(cliffTarget, force);
@@ -35,10 +32,9 @@ export async function generateFiles({
   // 调用命令生成git-cliff的配置文件
   await runGitCliff(["--init", changelogFormat]);
 
-  return {
-    configFile,
-    cliffFile,
-  };
+  // 保存到上下文
+  context.configFile = configFile;
+  context.cliffFile = CONSTANTS.CLIFF_FILE;
 }
 
 async function assertCanWrite(file, force) {
@@ -47,7 +43,9 @@ async function assertCanWrite(file, force) {
   }
 }
 
-function resolveConfigExtension(configFormat, moduleFormat) {
+function resolveConfigExtension(context) {
+  const { configFormat, moduleFormat } = context;
+
   if (configFormat === "json") {
     return "json";
   }

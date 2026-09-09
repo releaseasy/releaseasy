@@ -1,7 +1,9 @@
 import { readPackageJSON, writePackageJSON } from "pkg-types";
 
 export async function bump(options, context) {
-  const pkg = await readPackageJSON(options.cwd);
+  const { cwd } = options;
+
+  const pkg = await readPackageJSON(cwd);
 
   // 写入版本号
   pkg.version = context.version;
@@ -12,5 +14,5 @@ export async function bump(options, context) {
     tag: context.tag,
   };
 
-  await writePackageJSON(`${options.cwd}/package.json`, pkg);
+  await writePackageJSON(`${cwd}/package.json`, pkg);
 }

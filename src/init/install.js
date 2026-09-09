@@ -1,11 +1,10 @@
 import { x } from "tinyexec";
 import { confirm } from "@inquirer/prompts";
-import { detect } from "package-manager-detector/detect";
 import { resolveCommand } from "package-manager-detector/commands";
-
 import { isPackageInstalled } from "../utils/index.js";
 
-export async function ensureJiti(cwd) {
+export async function install(context) {
+  const { cwd, packageManager } = context;
   // 已经安装，直接返回
   if (isPackageInstalled(cwd, "jiti")) {
     return;
@@ -19,12 +18,6 @@ export async function ensureJiti(cwd) {
   // 用户拒绝安装
   if (!shouldInstall) {
     return;
-  }
-
-  const packageManager = await detect({ cwd });
-
-  if (!packageManager) {
-    throw new Error("Could not detect the package manager used by this project.");
   }
 
   const { command, args } = resolveCommand(packageManager.agent, "add", ["-D", "jiti"]);
