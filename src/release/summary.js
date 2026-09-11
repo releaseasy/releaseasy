@@ -1,6 +1,5 @@
 import ansis from "ansis";
-import { logger, blank } from "../utils/index.js";
-import { getWorkingTreeChanges } from "../utils/git.js";
+import { logger, blank, getWorkingTreeChanges } from "../utils/index.js";
 import { confirm } from "@inquirer/prompts";
 import { cancel } from "../handleError.js";
 
@@ -32,7 +31,7 @@ export async function summary(options, context) {
 
 function renderSection(title, fn) {
   blank();
-  logger.log(ansis.cyan(title));
+  logger.info(ansis.cyan(title));
   return fn();
 }
 
@@ -40,6 +39,6 @@ function renderKeyValue(data) {
   const maxKeyLength = Math.max(...Object.keys(data).map((k) => k.length));
 
   for (const [key, val] of Object.entries(data)) {
-    logger.log(ansis.green(key.padEnd(maxKeyLength + 2)), ansis.yellow(val));
+    logger.info(ansis.green(key.padEnd(maxKeyLength + 2)), ansis.yellow(val));
   }
 }

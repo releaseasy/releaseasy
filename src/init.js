@@ -9,7 +9,7 @@ import {
   addScripts,
   dump,
 } from "./init/index.js";
-import { logger } from "./utils/index.js";
+import { logger } from "./utils/log.js";
 
 export async function init(inlineOps = {}) {
   const options = {
@@ -17,7 +17,7 @@ export async function init(inlineOps = {}) {
     force: inlineOps.force ?? false,
   };
 
-  logger.log(`\n${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}\n`);
+  logger.info(`\n${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}\n`);
 
   // 获取基本的上下文
   const context = await getInitContext(options);

@@ -1,16 +1,14 @@
 import { Spinner } from "picospinner";
-import { createConsola } from "consola";
 import { createDefu } from "defu";
 import path from "node:path";
 import { createRequire } from "node:module";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
 
-export const logger = createConsola({
-  defaults: {
-    tag: CONSTANTS.CLI_NAME,
-  },
-});
+export * from "./fs.js";
+export * from "./git.js";
+export * from "./log.js";
+export * from "./interpolate.js";
 
 export const defu = createDefu((obj, key, value) => {
   if (Array.isArray(obj[key]) && Array.isArray(value)) {

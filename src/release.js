@@ -10,9 +10,10 @@ import {
   summary,
   git,
 } from "./release/index.js";
-import { formatDuration, logger } from "./utils/index.js";
+import { formatDuration } from "./utils/index.js";
 import { getCurrentCommitSha, rollback } from "./utils/git.js";
 import ansis from "ansis";
+import { logger } from "./utils/log.js";
 
 export async function release(options) {
   const start = performance.now();
@@ -39,7 +40,7 @@ export async function release(options) {
     await git(options, context);
 
     const cost = formatDuration(performance.now() - start);
-    logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
+    logger.info(ansis.green(`🎉 Released successfully! (in ${cost})`));
   } catch (err) {
     await rollback(options, context, initialCommitSha);
     throw err;

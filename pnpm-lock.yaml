@@ -118,9 +118,6 @@ importers:
       commander:
         specifier: ^15.0.0
         version: 15.0.0
-      consola:
-        specifier: ^3.4.2
-        version: 3.4.2
       defu:
         specifier: ^6.1.7
         version: 6.1.7
@@ -998,10 +995,6 @@ packages:
 
   confbox@0.3.1:
     resolution: {integrity: sha512-cKUSoKa8YxFZZSmraVi7onONx3amu77ngK3kGpsYHDH7drPwCRkQE1RYMPlLRrMtnciRj274XNRxcHxnKmDSnA==}
-
-  consola@3.4.2:
-    resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
-    engines: {node: ^14.18.0 || >=16.10.0}
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
@@ -2050,8 +2043,6 @@ snapshots:
   commander@15.0.0: {}
 
   confbox@0.3.1: {}
-
-  consola@3.4.2: {}
 
   convert-source-map@2.0.0: {}
 

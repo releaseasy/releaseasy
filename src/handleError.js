@@ -1,4 +1,4 @@
-import { logger } from "./utils/index.js";
+import { logger } from "./utils/log.js";
 import CONSTANTS from "./constants/index.js";
 
 export function handleError(err, options = {}) {
