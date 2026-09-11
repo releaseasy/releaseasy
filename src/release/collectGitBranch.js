@@ -1,4 +1,4 @@
-import { getCurrentBranch } from "../utils/git.js";
+import { getCurrentBranch } from "../utils/index.js";
 
 export async function collectGitBranch(options, context) {
   const { requireBranch } = options.git;

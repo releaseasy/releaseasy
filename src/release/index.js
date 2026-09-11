@@ -1,4 +1,4 @@
-export * from "./assertGitReady.js";
+export * from "./detect.js";
 export * from "./collectGitBranch.js";
 export * from "./collectPackageMetadata.js";
 export * from "./selectVersion.js";

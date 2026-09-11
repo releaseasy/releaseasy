@@ -1,6 +1,6 @@
 import { input, select } from "@inquirer/prompts";
 import { gt, inc, prerelease, valid } from "semver";
-import { interpolate } from "../utils/interpolate";
+import { interpolate } from "../utils/index.js";
 
 export async function selectVersion(options, context) {
   let targetVersion;

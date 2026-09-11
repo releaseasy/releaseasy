@@ -1,5 +1,4 @@
-import { add, commit, tag, push } from "../utils/git.js";
-import { createSpinner, shouldShowSpinner } from "../utils/index.js";
+import { createSpinner, shouldShowSpinner, add, commit, tag, push } from "../utils/index.js";
 
 const spinner = createSpinner("Releasing…");
 

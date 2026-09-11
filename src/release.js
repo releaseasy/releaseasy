@@ -1,5 +1,5 @@
 import {
-  assertGitReady,
+  detectEnvironment,
   collectGitBranch,
   collectPackageMetadata,
   selectVersion,
@@ -10,10 +10,8 @@ import {
   summary,
   git,
 } from "./release/index.js";
-import { formatDuration } from "./utils/index.js";
-import { getCurrentCommitSha, rollback } from "./utils/git.js";
+import { formatDuration, getCurrentCommitSha, rollback, logger } from "./utils/index.js";
 import ansis from "ansis";
-import { logger } from "./utils/log.js";
 
 export async function release(options) {
   const start = performance.now();
@@ -24,7 +22,7 @@ export async function release(options) {
   };
   let initialCommitSha;
   try {
-    // await assertGitReady(options);
+    await detectEnvironment(options);
     await collectGitBranch(options, context);
     await collectPackageMetadata(options, context);
 

@@ -1,7 +1,12 @@
 import { Spinner } from "picospinner";
 import { runGitCliff } from "../git-cliff";
-import { createSpinner, getStdio, shouldShowSpinner, isVerbose } from "../utils/index.js";
-import { interpolate } from "../utils/interpolate.js";
+import {
+  createSpinner,
+  getStdio,
+  shouldShowSpinner,
+  isVerbose,
+  interpolate,
+} from "../utils/index.js";
 import { x } from "tinyexec";
 const spinner = createSpinner("Generating changelog, please wait…");
 

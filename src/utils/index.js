@@ -5,9 +5,9 @@ import { createRequire } from "node:module";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
 
+export { consola as logger } from "consola";
 export * from "./fs.js";
 export * from "./git.js";
-export * from "./log.js";
 export * from "./interpolate.js";
 
 export const defu = createDefu((obj, key, value) => {
