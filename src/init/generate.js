@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { outputFile, exists } from "../utils/fs.js";
 import { runGitCliff } from "../git-cliff.js";
 import CONSTANTS from "../constants/index.js";
+import ansis from "ansis";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,7 +31,11 @@ export async function generateFiles(options, context) {
   await fs.copyFile(configTemplate, configTarget);
 
   // 调用命令生成git-cliff的配置文件
-  await runGitCliff(["--init", changelogFormat]);
+  await runGitCliff(["--init", changelogFormat], {
+    nodeOptions: {
+      stdio: "pipe",
+    },
+  });
 
   // 保存到上下文
   context.configFile = configFile;
@@ -39,7 +44,9 @@ export async function generateFiles(options, context) {
 
 async function assertCanWrite(file, force) {
   if (!force && (await exists(file))) {
-    throw new Error(`File already exists: ${path.basename(file)}. Use --force to overwrite it.`);
+    throw new Error(
+      `File already exists: ${ansis.yellow(path.basename(file))}. Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
+    );
   }
 }
 

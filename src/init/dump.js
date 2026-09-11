@@ -1,13 +1,12 @@
 import ansis from "ansis";
-import { logger } from "../utils/log.js";
+import { logger } from "../utils/index.js";
 
 export async function dump(context) {
   const { configFile, cliffFile, packageManager } = context;
-  // 打印结果
 
   logger.success(`Created ${configFile}`);
   logger.success(`Created ${cliffFile}`);
-  logger.info(`
+  logger.log(`
   You're ready to release!
   Run:
     ${ansis.cyan(`${packageManager.agent} release`)}

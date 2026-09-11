@@ -4,11 +4,12 @@ import { confirm } from "@inquirer/prompts";
 import { cancel } from "../handleError.js";
 
 export async function summary(options, context) {
+  const { version, tag, branchName, git } = context;
   const data = {
-    Version: context.version,
-    "Npm Dist Tag": context.tag,
-    Branch: context.branchName,
-    "Git Tag": context.git.tagName,
+    Version: version,
+    "Npm Dist Tag": tag,
+    Branch: branchName,
+    "Git Tag": git.tagName,
   };
 
   await renderSection("Summary:", () => {
@@ -31,7 +32,7 @@ export async function summary(options, context) {
 
 function renderSection(title, fn) {
   blank();
-  logger.info(ansis.cyan(title));
+  logger.log(ansis.cyan(title));
   return fn();
 }
 
@@ -39,6 +40,6 @@ function renderKeyValue(data) {
   const maxKeyLength = Math.max(...Object.keys(data).map((k) => k.length));
 
   for (const [key, val] of Object.entries(data)) {
-    logger.info(ansis.green(key.padEnd(maxKeyLength + 2)), ansis.yellow(val));
+    logger.log(ansis.green(key.padEnd(maxKeyLength + 2)), ansis.yellow(val));
   }
 }

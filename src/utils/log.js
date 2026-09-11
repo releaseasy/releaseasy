@@ -1,23 +1,8 @@
-import ansis from "ansis";
+import { createConsola } from "consola";
+import CONSTANTS from "../constants/index.js";
 
-export const logger = {
-  info(message) {
-    console.log(message);
-  },
+export const logger = createConsola();
 
-  success(message) {
-    console.log(`${ansis.green("✓")}  ${message}`);
-  },
-
-  warn(message) {
-    console.log();
-    console.warn(`${ansis.yellow("⚠")}  ${message}`);
-    console.log();
-  },
-
-  error(message) {
-    console.log();
-    console.error(`${ansis.red("✖")}  ${message}`);
-    console.log();
-  },
-};
+export const appLogger = logger.withDefaults({
+  tag: CONSTANTS.CLI_NAME,
+});
