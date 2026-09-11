@@ -2,7 +2,7 @@
 
 <img src="./logo3.png" width="120" alt="releaseasy">
 
-# releas(e)asy
+# releaseasy
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-048754?logo=buymeacoffee)](https://www.lujiahao.com/sponsor)
 [![npm version](https://img.shields.io/npm/v/releaseasy)](https://www.npmjs.com/package/releaseasy)
