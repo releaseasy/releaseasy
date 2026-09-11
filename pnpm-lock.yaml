@@ -133,6 +133,9 @@ importers:
       picospinner:
         specifier: ^3.1.2
         version: 3.1.2
+      pkg-types:
+        specifier: ^2.3.3
+        version: 2.3.3
       semver:
         specifier: ^7.8.5
         version: 7.8.5
@@ -167,9 +170,6 @@ importers:
       oxlint:
         specifier: ^1.82.0
         version: 1.82.0
-      pkg-types:
-        specifier: ^2.3.3
-        version: 2.3.3
       publint:
         specifier: ^0.3.24
         version: 0.3.24
