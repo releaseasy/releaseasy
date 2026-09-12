@@ -6,8 +6,8 @@ import { resolveCommand } from "package-manager-detector/commands";
 export async function dump(context) {
   const { configFile, cliffFile, packageManager, packageJsonPath } = context;
 
-  logger.success(`Created ${configFile}`);
-  logger.success(`Created ${cliffFile}`);
+  logger.success(`Created ${ansis.yellow(configFile)}`);
+  logger.success(`Created ${ansis.yellow(cliffFile)}`);
 
   let command;
   if (await hasScripts(packageJsonPath, CONSTANTS.DEFAULT_SCRIPTS)) {
