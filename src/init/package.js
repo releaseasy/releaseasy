@@ -5,26 +5,28 @@ import CONSTANTS from "../constants/index.js";
 
 export async function addScripts(context) {
   const { packageJson, packageJsonPath } = context;
-  const scripts = packageJson.scripts ?? {};
 
-  const additions = {
-    // 刚好默认的命令就是cli的名称
-    release: CONSTANTS.CLI_NAME,
-  };
+  // const scripts = packageJson.scripts ?? {};
 
-  const conflicts = Object.keys(additions).filter((name) => name in scripts);
+  // const additions = {
+  //   // 刚好默认的命令就是cli的名称
+  //   release: `${CONSTANTS.CLI_NAME} release`,
+  // };
 
-  if (conflicts.length > 0) {
-    context.changed = false;
-  }
+  // const conflicts = Object.keys(additions).filter((name) => name in scripts);
 
-  packageJson.scripts = {
-    ...scripts,
-    ...additions,
-  };
+  // if (conflicts.length > 0) {
+  //   context.changed = false;
+  //   return;
+  // }
 
-  // 写入pkg.json
-  writePackageJSON(packageJsonPath, packageJson);
+  // packageJson.scripts = {
+  //   ...scripts,
+  //   ...additions,
+  // };
 
-  context.changed = true;
+  // // 写入pkg.json
+  // writePackageJSON(packageJsonPath, packageJson);
+
+  // context.changed = true;
 }

@@ -3,7 +3,7 @@ import { readPackageJSON } from "pkg-types";
 import { detect } from "package-manager-detector/detect";
 import { isDirectory, isFile, exists } from "../utils/fs.js";
 
-export async function getInitContext(options) {
+export async function createContext(options) {
   const { cwd } = options;
   const resolvedCwd = path.resolve(cwd);
 

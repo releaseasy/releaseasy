@@ -2,7 +2,7 @@ import ansis from "ansis";
 
 import CONSTANTS from "./constants/index.js";
 import {
-  getInitContext,
+  createContext,
   promptInit,
   install,
   generateFiles,
@@ -20,7 +20,7 @@ export async function init(inlineOps = {}) {
   logger.log(`${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}`);
   blank();
   // 获取基本的上下文
-  const context = await getInitContext(options);
+  const context = await createContext(options);
 
   // 交互式配置
   Object.assign(context, await promptInit(context));

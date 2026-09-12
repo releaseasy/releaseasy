@@ -4,11 +4,16 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
-
+import { readPackageJSON } from "pkg-types";
 export { consola as logger } from "consola";
 export * from "./fs.js";
 export * from "./git.js";
 export * from "./interpolate.js";
+
+export async function hasScript(packageJsonPath, scriptName) {
+  const packageJson = await readPackageJSON(packageJsonPath);
+  return typeof packageJson.scripts?.[scriptName] === "string";
+}
 
 export const defu = createDefu((obj, key, value) => {
   if (Array.isArray(obj[key]) && Array.isArray(value)) {
