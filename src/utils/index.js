@@ -11,9 +11,13 @@ export * from "./pkg.js";
 export * from "./git.js";
 export * from "./interpolate.js";
 
-export async function hasScript(packageJsonPath, scriptName) {
+export async function hasScripts(packageJsonPath, additions) {
   const packageJson = await readPackageJSON(packageJsonPath);
-  return typeof packageJson.scripts?.[scriptName] === "string";
+  const scripts = packageJson.scripts ?? {};
+
+  return Object.entries(additions).every(
+    ([name, expectedValue]) => scripts[name] === expectedValue,
+  );
 }
 
 export const defu = createDefu((obj, key, value) => {

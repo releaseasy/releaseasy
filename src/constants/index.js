@@ -89,7 +89,12 @@ const CHANGELOG_FORMAT_CHOICES = [
   },
 ];
 
+const DEFAULT_SCRIPTS = {
+  release: CLI_NAME,
+};
+
 export default {
+  DEFAULT_SCRIPTS,
   DEFAULTS,
   CLI_NAME,
   VARIABLE_RE,

@@ -25,10 +25,6 @@ export async function init(inlineOps = {}) {
   // 交互式配置
   await promptInit(context);
 
-  console.log(context);
-
-  return;
-
   // 下载jiti
   if (context.configFormat === "typescript") {
     await install(context);

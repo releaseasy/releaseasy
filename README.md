@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./logo3.png" width="120" alt="releaseasy">
+<img src="./logo.png" width="120" alt="releaseasy">
 
 # releaseasy
 
