@@ -76,7 +76,7 @@ const changelogCommand = new Command("changelog")
   .allowExcessArguments(true);
 
 changelogCommand.action(async (_, command) => {
-  const { runGitCliff } = await import("./git-cliff.js");
+  const { runGitCliff } = await import("./utils/index.js");
 
   const result = await runGitCliff(command.args, {
     throwOnError: false,

@@ -23,7 +23,7 @@ export async function summary(options, context) {
   blank();
 
   const ok = await confirm({
-    message: `Releasing v${version} on ${tag}. Confirm?`,
+    message: `Releasing ${ansis.yellow(`v${version}`)} on ${ansis.yellow(tag)}. Confirm?`,
     default: false,
   });
 

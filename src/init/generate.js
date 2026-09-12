@@ -1,8 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { outputFile, exists } from "../utils/fs.js";
-import { runGitCliff } from "../git-cliff.js";
+import { outputFile, exists, runGitCliff } from "../utils/index.js";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
 
