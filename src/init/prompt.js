@@ -4,7 +4,7 @@ import CONSTANTS from "../constants/index.js";
 export async function promptInit(context) {
   const configFormat = await select({
     message: "Which config format would you like?",
-    default: context.hasTsConfig ? "typescript" : "javascript",
+    default: context.isTypeScriptProject ? "typescript" : "javascript",
     choices: CONSTANTS.CONFIG_FORMAT_CHOICES,
   });
 
@@ -18,9 +18,9 @@ export async function promptInit(context) {
     default: true,
   });
 
-  return {
+  Object.assign(context, {
     configFormat,
     changelogFormat,
     addScripts,
-  };
+  });
 }

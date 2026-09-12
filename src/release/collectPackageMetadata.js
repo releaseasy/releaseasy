@@ -1,4 +1,4 @@
-import { readPackageJSON } from "pkg-types";
+import { readPackageJSON } from "../utils/index.js";
 import semver from "semver";
 
 export async function collectPackageMetadata(options, context) {

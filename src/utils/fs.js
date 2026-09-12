@@ -19,6 +19,16 @@ export async function isDirectory(filePath) {
   }
 }
 
+export async function assertDirectory(directory) {
+  const resolvedPath = path.resolve(directory);
+
+  if (!(await isDirectory(resolvedPath))) {
+    throw new Error(`Directory does not exist: ${resolvedPath}`);
+  }
+
+  return resolvedPath;
+}
+
 export async function isFile(filePath) {
   try {
     const stat = await fs.stat(filePath);

@@ -4,9 +4,10 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
-import { readPackageJSON } from "pkg-types";
+import { readPackageJSON } from "./pkg.js";
 export { consola as logger } from "consola";
 export * from "./fs.js";
+export * from "./pkg.js";
 export * from "./git.js";
 export * from "./interpolate.js";
 

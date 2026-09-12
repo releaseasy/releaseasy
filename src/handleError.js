@@ -9,6 +9,7 @@ export function handleError(err, options = {}) {
     logger.warn(err.message);
     process.exit(0);
   } else if (err instanceof Error) {
+    logger.error(err);
     if (options.verbose >= CONSTANTS.LOG_LEVEL.DEBUG) {
       logger.error(err);
       return;

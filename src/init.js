@@ -23,7 +23,11 @@ export async function init(inlineOps = {}) {
   const context = await createContext(options);
 
   // 交互式配置
-  Object.assign(context, await promptInit(context));
+  await promptInit(context);
+
+  console.log(context);
+
+  return;
 
   // 下载jiti
   if (context.configFormat === "typescript") {

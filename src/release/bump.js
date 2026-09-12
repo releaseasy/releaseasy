@@ -1,4 +1,4 @@
-import { readPackageJSON, writePackageJSON } from "pkg-types";
+import { readPackageJSON, writePackageJSON } from "../utils/index.js";
 
 export async function bump(options, context) {
   const { cwd } = options;

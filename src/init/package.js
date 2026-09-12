@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { writePackageJSON } from "pkg-types";
 import CONSTANTS from "../constants/index.js";
 
 export async function addScripts(context) {
