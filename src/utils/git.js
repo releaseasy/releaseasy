@@ -78,13 +78,16 @@ export async function getCurrentCommitSha(options) {
 }
 
 async function deleteTag(options, context) {
-  if (!context.git.tagCreated) {
+  const { tagCreated, tagName } = context;
+
+  if (!tagCreated) {
     return;
   }
-  await git(options, ["tag", "-d", context.git.tagName]);
+  await git(options, ["tag", "-d", tagName]);
 }
 
-async function reset(options, initialCommitSha) {
+async function reset(options, context) {
+  const { initialCommitSha } = context;
   if (!initialCommitSha) {
     return;
   }
@@ -95,9 +98,9 @@ async function reset(options, initialCommitSha) {
   await git(options, ["clean", "-fd"]);
 }
 
-export async function rollback(options, context, initialCommitSha) {
+export async function rollback(options, context) {
   await deleteTag(options, context);
-  await reset(options, initialCommitSha);
+  await reset(options, context);
 }
 
 export async function add(options) {
@@ -105,19 +108,14 @@ export async function add(options) {
 }
 
 export async function commit(options, context) {
-  await gitWithVerbose(options, [
-    "commit",
-    ...options.git.commitArgs,
-    "-m",
-    context.git.commitMessage,
-  ]);
+  await gitWithVerbose(options, ["commit", ...options.git.commitArgs, "-m", context.commitMessage]);
 }
 
 export async function tag(options, context) {
-  await gitWithVerbose(options, ["tag", "-f", context.git.tagName]);
-  context.git.tagCreated = true;
+  await gitWithVerbose(options, ["tag", "-f", context.tagName]);
+  context.tagCreated = true;
 }
 
 export async function push(options, context) {
-  await gitWithVerbose(options, ["push", "origin", "HEAD", `refs/tags/${context.git.tagName}`]);
+  await gitWithVerbose(options, ["push", "origin", "HEAD", `refs/tags/${context.tagName}`]);
 }

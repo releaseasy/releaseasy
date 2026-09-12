@@ -4,12 +4,12 @@ import { confirm } from "@inquirer/prompts";
 import { cancel } from "../handleError.js";
 
 export async function summary(options, context) {
-  const { version, tag, branchName, git } = context;
+  const { version, tag, branchName, tagName } = context;
   const data = {
     Version: version,
     "Npm Dist Tag": tag,
     Branch: branchName,
-    "Git Tag": git.tagName,
+    "Git Tag": tagName,
   };
 
   await renderSection("Summary:", () => {
@@ -23,7 +23,7 @@ export async function summary(options, context) {
   blank();
 
   const ok = await confirm({
-    message: `Releasing v${context.version} on ${context.tag}. Confirm?`,
+    message: `Releasing v${version} on ${tag}. Confirm?`,
     default: false,
   });
 

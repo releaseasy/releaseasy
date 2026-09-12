@@ -3,20 +3,22 @@ import { gt, inc, prerelease, valid } from "semver";
 import { interpolate } from "../utils/index.js";
 
 export async function selectVersion(options, context) {
+  const { git, increments } = options;
+  const { latestVersion } = context;
   let targetVersion;
-  const isPrerelease = prerelease(context.latestVersion);
+  const isPrerelease = prerelease(latestVersion);
 
   // 构建版本选项
-  const choices = options.increments.map((type) => ({
-    name: `${type} (${inc(context.latestVersion, type)})`,
-    value: inc(context.latestVersion, type),
+  const choices = increments.map((type) => ({
+    name: `${type} (${inc(latestVersion, type)})`,
+    value: inc(latestVersion, type),
   }));
 
   // 如果当前是预发布版本，插入 prerelease 选项
   if (isPrerelease) {
     choices.unshift({
-      name: `prerelease (${inc(context.latestVersion, "prerelease")})`,
-      value: inc(context.latestVersion, "prerelease"),
+      name: `prerelease (${inc(latestVersion, "prerelease")})`,
+      value: inc(latestVersion, "prerelease"),
     });
   }
 
@@ -37,7 +39,7 @@ export async function selectVersion(options, context) {
   if (release === "custom") {
     targetVersion = await input({
       message: "Input custom version",
-      default: context.latestVersion,
+      default: latestVersion,
       validate(value) {
         const v = value.trim();
 
@@ -45,8 +47,8 @@ export async function selectVersion(options, context) {
           return "Invalid semver version";
         }
 
-        if (!gt(v, context.latestVersion)) {
-          return `Version must be greater than current version: ${context.latestVersion}`;
+        if (!gt(v, latestVersion)) {
+          return `Version must be greater than current version: ${latestVersion}`;
         }
 
         return true;
@@ -57,6 +59,8 @@ export async function selectVersion(options, context) {
   // 赋值给上下文
   context.version = targetVersion;
 
-  context.git.tagName = interpolate(options.git.tagName, context);
-  context.git.commitMessage = interpolate(options.git.commitMessage, context);
+  Object.assign(context, {
+    tagName: interpolate(git.tagName, context),
+    commitMessage: interpolate(git.commitMessage, context),
+  });
 }

@@ -18,7 +18,7 @@ export async function generateFiles(options, context) {
   const configFile = `releaseasy.config.${configExtension}`;
   const configTemplate = path.join(TEMPLATE_DIR, configFile);
 
-  if (!exists(configTemplate)) {
+  if (!(await exists(configTemplate))) {
     throw new Error(`Template not found: ${configTemplate}`);
   }
 
