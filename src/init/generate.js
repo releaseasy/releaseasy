@@ -31,15 +31,21 @@ export async function generateFiles(options, context) {
   await fs.copyFile(configTemplate, configTarget);
 
   // 调用命令生成git-cliff的配置文件
-  await runGitCliff(["--init", changelogFormat], {
-    nodeOptions: {
-      stdio: "pipe",
-    },
-  });
+  try {
+    await runGitCliff(["--init", changelogFormat], {
+      nodeOptions: {
+        stdio: "pipe",
+      },
+    });
+  } catch (error) {
+    throw new Error(`Failed to generate ${CONSTANTS.CLIFF_FILE}.`, { cause: error });
+  }
 
   // 保存到上下文
-  context.configFile = configFile;
-  context.cliffFile = CONSTANTS.CLIFF_FILE;
+  Object.assign(context, {
+    configFile,
+    cliffFile: CONSTANTS.CLIFF_FILE,
+  });
 }
 
 async function assertCanWrite(file, force) {
