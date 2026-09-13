@@ -8,6 +8,12 @@ import CONSTANTS from "./constants/index.js";
 
 const program = new Command();
 
+let currentCommand = program;
+
+program.hook("preAction", (_, actionCommand) => {
+  currentCommand = actionCommand;
+});
+
 program
   .name(CONSTANTS.CLI_NAME)
   .version(pkg.version, "-V, --version")
@@ -91,10 +97,8 @@ async function runCLI() {
   try {
     await program.parseAsync(process.argv);
   } catch (err) {
-    const { verbose } = releaseCommand.opts();
-
     handleError(err, {
-      verbose,
+      command: currentCommand,
     });
   }
 }

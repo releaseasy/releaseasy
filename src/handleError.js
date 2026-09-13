@@ -9,15 +9,24 @@ export function handleError(err, options = {}) {
     logger.warn(err.message);
     process.exit(0);
   } else if (err instanceof Error) {
-    logger.error(err);
-    if (options.verbose >= CONSTANTS.LOG_LEVEL.DEBUG) {
+    const commandOptions = options.command?.opts();
+
+    const { verbose } = commandOptions;
+    if (verbose === undefined) {
       logger.error(err);
       return;
     }
+
+    if (verbose >= CONSTANTS.LOG_LEVEL.DEBUG) {
+      logger.error(err);
+      return;
+    }
+
     logger.error(err.message);
-  } else {
-    logger.error("Unknown error", err);
+
+    process.exit(1);
   }
+  logger.error("Unknown error", err);
   process.exit(1);
 }
 
