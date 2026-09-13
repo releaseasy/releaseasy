@@ -1,7 +1,9 @@
 import { readPackageJSON, writePackageJSON } from "../utils/index.js";
 
-export async function bump(context) {
+export async function bump(options, context) {
   const { version, tag, packageJsonPath } = context;
+
+  await runHook(options, "before:bump", context);
 
   const pkg = await readPackageJSON(packageJsonPath);
 
@@ -15,4 +17,6 @@ export async function bump(context) {
   };
 
   await writePackageJSON(packageJsonPath, pkg);
+
+  await runHook(options, "after:bump", context);
 }

@@ -21,7 +21,7 @@ export async function release(options) {
     await selectTag(options, context);
     await genChangelog(options, context);
     await confirmChangelog(options, context);
-    await bump(context);
+    await bump(options, context);
     await summary(options, context);
     await git(options, context);
 
