@@ -8,14 +8,17 @@ import {
   getCurrentCommitSha,
   getCurrentBranch,
   readPackageJSON,
+  exists,
 } from "../utils/index.js";
 import { valid } from "semver";
+import path from "node:path";
+import ansis from "ansis";
 
 export async function createContext(options) {
   const { cwd, git } = options;
 
   // 判断目录
-  await assertDirectory(cwd);
+  const resolvedCwd = await assertDirectory(cwd);
   const packageJsonPath = await resolvePackageJSON(cwd);
 
   if (!(await isGitAvailable(options))) {
@@ -70,7 +73,23 @@ export async function createContext(options) {
     );
   }
 
+  let resolvedCliffFile;
+  // 提前抛出配置缺少的错误,用户体验更好
+  if (git.changelog !== false) {
+    // 判断配置文件是否存在
+    resolvedCliffFile = path.join(resolvedCwd, git.changelog.configFile);
+
+    if (!(await exists(resolvedCliffFile))) {
+      throw Error(
+        `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +
+          `Run "${ansis.cyan("releaseasy init")}" to initialize the configuration.`,
+      );
+    }
+  }
+
   return {
+    resolvedCwd,
+    resolvedCliffFile,
     name,
     latestVersion: version,
     remoteUrl,

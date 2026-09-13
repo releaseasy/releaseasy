@@ -6,7 +6,7 @@ import { x } from "tinyexec";
 export async function genChangelog(options, context) {
   if (options.git.changelog === false) return;
 
-  const args = buildGitCliffArgs(options, context);
+  const args = await buildGitCliffArgs(options, context);
 
   await withSpinner(options, "Generating changelog, please wait…", async () => {
     try {
@@ -28,7 +28,7 @@ async function formatChangelog(options, context) {
 
   const cmd = interpolate(options.git.changelog.format, context);
 
-  await x(cmd, undefined, {
+  await x(cmd, [], {
     nodeOptions: {
       shell: true,
       stdio: "pipe",
@@ -36,18 +36,18 @@ async function formatChangelog(options, context) {
   });
 }
 
-function buildGitCliffArgs(options, context) {
-  const { args: argTemplate, configFile, output } = options.git.changelog;
+async function buildGitCliffArgs(options, context) {
+  const { args: argTemplate, output } = options.git.changelog;
 
   const args = parseArgsStringToArgv(interpolate(argTemplate, context));
 
-  args.push("--config", configFile);
+  args.push("--config", context.resolvedCliffFile);
   args.push("--output", output);
+  args.push(...getVerboseArgs(options));
 
-  // 把变更日志输出选项的value也放进到上下文中
   context.changelog = output;
 
-  return [...args, ...getVerboseArgs(options)];
+  return args;
 }
 
 function getVerboseArgs(options) {
