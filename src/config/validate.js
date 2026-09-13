@@ -1,5 +1,4 @@
 import * as v from "valibot";
-import fs from "fs-extra";
 
 const configSchema = v.object({
   cwd: v.string(),
@@ -36,26 +35,10 @@ const configSchema = v.object({
      * /^(main|develop)$/
      */
     requireBranch: v.union([v.literal(false), v.string(), v.array(v.string()), v.instance(RegExp)]),
-
     commitMessage: v.string(),
-
     addArgs: v.array(v.string()),
     commitArgs: v.array(v.string()),
-
     tagName: v.string(),
-
-    /**
-     * git.changelog
-     *
-     * false
-     *
-     * 或：
-     *
-     * {
-     *   configFile: "cliff.toml",
-     *   args: "-o --tag ${version}"
-     * }
-     */
     changelog: v.union([
       v.literal(false),
       v.object({
