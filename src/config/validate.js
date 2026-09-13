@@ -14,7 +14,18 @@ const configSchema = v.object({
    * ["patch", "minor"]
    * ["patch", "minor", "major"]
    */
-  increments: v.array(v.picklist(["patch", "minor", "major"])),
+  increments: v.array(
+    v.picklist([
+      "major",
+      "premajor",
+      "minor",
+      "preminor",
+      "patch",
+      "prepatch",
+      "prerelease",
+      "release",
+    ]),
+  ),
 
   /**
    * distTags
@@ -50,7 +61,12 @@ const configSchema = v.object({
   }),
 
   // hooks
-  hooks: v.optional(v.record(v.string())),
+  hooks: v.optional(
+    v.record(
+      v.picklist(["before:changelog", "after:changelog", "before:bump", "after:bump"]),
+      v.union([v.string(), v.array(v.string())]),
+    ),
+  ),
 });
 
 export function validateConfig(config) {
