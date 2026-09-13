@@ -4,10 +4,10 @@ import CONSTANTS from "../constants/index.js";
 import { resolveCommand } from "package-manager-detector/commands";
 
 export async function dump(context) {
-  const { configFile, cliffFile, packageManager, packageJsonPath } = context;
+  const { configFile, cliffFile, packageManager, packageJsonPath, changelogFormat } = context;
 
   logger.success(`Created ${ansis.yellow(configFile)}`);
-  logger.success(`Created ${ansis.yellow(cliffFile)}`);
+  logger.success(`Created ${ansis.yellow(cliffFile)} ${ansis.gray(`(${changelogFormat})`)}`);
 
   let command;
   if (await hasScripts(packageJsonPath, CONSTANTS.DEFAULT_SCRIPTS)) {
