@@ -1,6 +1,6 @@
 import { arch as getArch, platform as getPlatform } from "os";
 import { x } from "tinyexec";
-import { defu } from "./index.js";
+import { defu } from "./helpers.js";
 
 export async function runGitCliff(args, execOptions = {}) {
   const bin = getExePath();

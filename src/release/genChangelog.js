@@ -1,7 +1,6 @@
 import { Spinner } from "picospinner";
 import { logger, runGitCliff } from "../utils/index.js";
 import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
-import { x } from "tinyexec";
 
 export async function genChangelog(options, context) {
   if (options.git.changelog === false) return;
@@ -20,19 +19,6 @@ export async function genChangelog(options, context) {
         cause: error,
       });
     }
-  });
-}
-
-async function formatChangelog(options, context) {
-  if (!options.git.changelog.format) return;
-
-  const cmd = interpolate(options.git.changelog.format, context);
-
-  await x(cmd, [], {
-    nodeOptions: {
-      shell: true,
-      stdio: "pipe",
-    },
   });
 }
 

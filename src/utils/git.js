@@ -1,5 +1,5 @@
 import { x } from "tinyexec";
-import { defu } from "../utils/index.js";
+import { defu } from "../utils/helpers.js";
 
 function git(options, args, execOptions = {}) {
   return x(
