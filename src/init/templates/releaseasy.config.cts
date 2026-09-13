@@ -5,6 +5,8 @@ module.exports = {
   distTags: ["latest", "next"],
   git: {
     changelog: {
+      output: "CHANGELOG.md",
+      configFile: "cliff.toml",
       args: "--tag ${version}",
     },
   },
