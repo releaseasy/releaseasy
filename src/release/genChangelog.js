@@ -1,9 +1,12 @@
 import { Spinner } from "picospinner";
-import { logger, runGitCliff } from "../utils/index.js";
+import { runGitCliff, runHook } from "../utils/index.js";
 import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
 
 export async function genChangelog(options, context) {
   if (options.git.changelog === false) return;
+
+  // 前置钩子
+  await runHook(options, "before:changelog", context);
 
   const args = await buildGitCliffArgs(options, context);
 
@@ -20,6 +23,8 @@ export async function genChangelog(options, context) {
       });
     }
   });
+
+  await runHook(options, "after:changelog", context);
 }
 
 async function buildGitCliffArgs(options, context) {

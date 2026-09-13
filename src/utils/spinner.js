@@ -3,7 +3,7 @@ import { isVerbose } from "./helpers.js";
 
 function noop() {}
 
-function createSpinner(text, options) {
+export function createSpinner(text, options) {
   if (isVerbose(options)) {
     return {
       start: noop,

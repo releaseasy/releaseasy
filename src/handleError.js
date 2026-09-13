@@ -17,7 +17,7 @@ export function handleError(err, options = {}) {
       return;
     }
 
-    if (verbose >= CONSTANTS.LOG_LEVEL.DEBUG) {
+    if (verbose > CONSTANTS.LOG_LEVEL.DEBUG) {
       logger.error(err);
       return;
     }

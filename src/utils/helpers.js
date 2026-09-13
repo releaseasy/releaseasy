@@ -5,6 +5,7 @@ import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
 import { readPackageJSON } from "./pkg.js";
 import { interpolate } from "./interpolate.js";
+import { createSpinner } from "./spinner.js";
 import { x } from "tinyexec";
 
 export async function hasScripts(packageJsonPath, additions) {
@@ -54,15 +55,37 @@ export function isPackageInstalled(cwd, packageName) {
   }
 }
 
-export async function runHook(hook, context) {
-  if (!hook || !context) return;
-  for (const hookItem of hook) {
+export async function runHook(options, hookName, context) {
+  if (!context) return;
+
+  const { cwd, verbose, hooks } = options;
+  const hook = hooks?.[hookName];
+
+  if (!hook) return;
+
+  const hooksList = Array.isArray(hook) ? hook : [hook];
+
+  for (const hookItem of hooksList) {
     const cmd = interpolate(hookItem, context);
-    await x(cmd, [], {
-      nodeOptions: {
-        shell: true,
-        stdio: "pipe",
-      },
-    });
+
+    const spinner = createSpinner(cmd, options);
+
+    spinner.start();
+
+    try {
+      await x(cmd, [], {
+        throwOnError: true,
+        nodeOptions: {
+          cwd,
+          shell: true,
+          stdio: verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
+        },
+      });
+
+      spinner.succeed(cmd);
+    } catch (error) {
+      spinner.fail(cmd);
+      throw error;
+    }
   }
 }
