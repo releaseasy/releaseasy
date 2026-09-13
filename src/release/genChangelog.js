@@ -22,7 +22,9 @@ export async function genChangelog(options, context) {
         },
       });
     } catch (error) {
-      throw new Error("Failed to generate changelog");
+      throw new Error("Failed to generate changelog", {
+        cause: error,
+      });
     }
   });
 }
