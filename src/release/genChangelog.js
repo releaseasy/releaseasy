@@ -1,12 +1,6 @@
 import { Spinner } from "picospinner";
 import { logger, runGitCliff } from "../utils/index.js";
-import {
-  getStdio,
-  isVerbose,
-  interpolate,
-  parseArgsStringToArgv,
-  withSpinner,
-} from "../utils/index.js";
+import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
 import { x } from "tinyexec";
 
 export async function genChangelog(options, context) {
@@ -18,7 +12,7 @@ export async function genChangelog(options, context) {
     try {
       await runGitCliff(args, {
         nodeOptions: {
-          stdio: getStdio(options),
+          stdio: isVerbose(options) ? "inherit" : "pipe",
         },
       });
     } catch (error) {

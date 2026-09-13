@@ -48,10 +48,6 @@ export function isVerbose(options) {
   return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
 }
 
-export function getStdio(options) {
-  return isVerbose(options) ? "inherit" : "pipe";
-}
-
 function noop() {}
 
 export function createSpinner(text, options) {

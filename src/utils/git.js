@@ -1,5 +1,5 @@
 import { x } from "tinyexec";
-import { defu, getStdio } from "../utils/index.js";
+import { defu } from "../utils/index.js";
 
 function git(options, args, execOptions = {}) {
   return x(
@@ -16,9 +16,10 @@ function git(options, args, execOptions = {}) {
 }
 
 function gitWithVerbose(options, args) {
+  // 这里后期都还要优化
   return git(options, args, {
     nodeOptions: {
-      stdio: getStdio(options),
+      stdio: "pie",
     },
   });
 }
