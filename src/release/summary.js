@@ -4,10 +4,10 @@ import { confirm } from "@inquirer/prompts";
 import { cancel } from "../handleError.js";
 
 export async function summary(options, context) {
-  const { version, tag, branchName, tagName } = context;
+  const { version, distTag, branchName, tagName } = context;
   const data = {
     Version: version,
-    "Npm Dist Tag": tag,
+    "Npm Dist Tag": distTag,
     Branch: branchName,
     "Git Tag": tagName,
   };
@@ -23,7 +23,7 @@ export async function summary(options, context) {
   blank();
 
   const ok = await confirm({
-    message: `Releasing ${ansis.yellow(`v${version}`)} on ${ansis.yellow(tag)}. Confirm?`,
+    message: `Releasing ${ansis.yellow(`v${version}`)} on ${ansis.yellow(distTag)}. Confirm?`,
     default: false,
   });
 

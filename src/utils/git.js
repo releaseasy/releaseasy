@@ -19,7 +19,7 @@ function gitWithVerbose(options, args) {
   // 这里后期都还要优化
   return git(options, args, {
     nodeOptions: {
-      stdio: "pie",
+      stdio: "pipe",
     },
   });
 }

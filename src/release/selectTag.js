@@ -18,11 +18,12 @@ export async function selectTag(options, context) {
 
   const choices = [...enabled, ...disabled];
 
-  const tag = await select({
-    message: "What do you want to tag",
+  const distTag = await select({
+    message: "Select npm dist-tag",
     choices: choices,
   });
 
-  // 赋值给上下文
-  context.tag = tag;
+  Object.assign(context, {
+    distTag,
+  });
 }

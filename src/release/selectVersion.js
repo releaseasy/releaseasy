@@ -29,7 +29,7 @@ export async function selectVersion(options, context) {
   });
 
   const release = await select({
-    message: "What do you want to release",
+    message: "Select release type",
     choices,
   });
 
