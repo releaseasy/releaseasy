@@ -1,46 +1,26 @@
 import { Spinner } from "picospinner";
-import { runGitCliff } from "../utils/index.js";
+import { logger, runGitCliff } from "../utils/index.js";
 import {
-  createSpinner,
   getStdio,
-  shouldShowSpinner,
   isVerbose,
   interpolate,
   parseArgsStringToArgv,
+  withSpinner,
 } from "../utils/index.js";
 import { x } from "tinyexec";
-const spinner = createSpinner("Generating changelog, please wait…");
 
 export async function genChangelog(options, context) {
   if (options.git.changelog === false) return;
 
-  const showSpinner = shouldShowSpinner(options);
-
-  if (showSpinner) {
-    spinner.start();
-  }
-
   const args = buildGitCliffArgs(options, context);
 
-  try {
+  await withSpinner(options, "Generating changelog, please wait…", async () => {
     await runGitCliff(args, {
       nodeOptions: {
         stdio: getStdio(options),
       },
     });
-
-    // 执行变更日志格式化
-    await formatChangelog(options, context);
-
-    if (showSpinner) {
-      spinner.succeed("Changelog generated");
-    }
-  } catch (error) {
-    if (showSpinner) {
-      spinner.fail("Failed to generate changelog");
-    }
-    throw error;
-  }
+  });
 }
 
 async function formatChangelog(options, context) {
@@ -66,8 +46,6 @@ function buildGitCliffArgs(options, context) {
 
   // 把变更日志输出选项的value也放进到上下文中
   context.changelog = output;
-
-  console.log([...args, ...getVerboseArgs(options)]);
 
   return [...args, ...getVerboseArgs(options)];
 }

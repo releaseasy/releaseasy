@@ -48,15 +48,22 @@ export function isVerbose(options) {
   return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
 }
 
-export function shouldShowSpinner(options) {
-  return !isVerbose(options);
-}
-
 export function getStdio(options) {
   return isVerbose(options) ? "inherit" : "pipe";
 }
 
-export function createSpinner(text) {
+function noop() {}
+
+export function createSpinner(text, options) {
+  if (isVerbose(options)) {
+    return {
+      start: noop,
+      stop: noop,
+      succeed: noop,
+      fail: noop,
+    };
+  }
+
   return new Spinner(text, {
     stream: process.stderr,
     colors: {
@@ -66,9 +73,21 @@ export function createSpinner(text) {
   });
 }
 
+export async function withSpinner(options, text, fn) {
+  const spinner = createSpinner(text, options);
+
+  spinner.start();
+
+  try {
+    return await fn();
+  } finally {
+    spinner.stop();
+  }
+}
+
 export function isPackageInstalled(cwd, packageName) {
   try {
-    const require = createRequire(path.join(cwd, "__releaseasy_resolver__.js"));
+    const require = createRequire(path.join(cwd, `__${CONSTANTS.CLI_NAME}_resolver__.js`));
 
     require.resolve(packageName);
 
