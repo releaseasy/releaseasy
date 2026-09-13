@@ -1,18 +1,18 @@
 import { x } from "tinyexec";
 import { defu, getStdio } from "../utils/index.js";
 
-function getExecOptions(options) {
-  return {
-    throwOnError: true,
-    nodeOptions: {
-      cwd: options.cwd,
-      stdio: "pipe",
-    },
-  };
-}
-
 function git(options, args, execOptions = {}) {
-  return x("git", args, defu(execOptions, getExecOptions(options)));
+  return x(
+    "git",
+    args,
+    defu(execOptions, {
+      throwOnError: true,
+      nodeOptions: {
+        cwd: options.cwd,
+        stdio: "pipe",
+      },
+    }),
+  );
 }
 
 function gitWithVerbose(options, args) {

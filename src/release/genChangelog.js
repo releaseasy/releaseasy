@@ -15,11 +15,15 @@ export async function genChangelog(options, context) {
   const args = buildGitCliffArgs(options, context);
 
   await withSpinner(options, "Generating changelog, please wait…", async () => {
-    await runGitCliff(args, {
-      nodeOptions: {
-        stdio: getStdio(options),
-      },
-    });
+    try {
+      await runGitCliff(args, {
+        nodeOptions: {
+          stdio: getStdio(options),
+        },
+      });
+    } catch (error) {
+      throw new Error("Failed to generate changelog");
+    }
   });
 }
 
