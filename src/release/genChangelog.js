@@ -45,7 +45,12 @@ async function buildGitCliffArgs(options, context) {
   args.push("--output", output);
   args.push(...getVerboseArgs(options));
 
-  context.changelog = output;
+  // 把ouput直接给到上下文方便复用
+  Object.assign(context, {
+    changelog: {
+      output,
+    },
+  });
 
   return args;
 }
