@@ -6,8 +6,13 @@ type ChangelogOptions = {
   output?: string;
   configFile?: string;
   args?: string;
-  format?: string;
 };
+
+type StepName = "changelog" | "bump";
+
+type HookEvent = `before:${StepName}` | `after:${StepName}`;
+
+type Hooks = Partial<Record<HookEvent, string | string[]>>;
 
 export interface UserConfig {
   increments?: ReleaseType[];
@@ -20,6 +25,7 @@ export interface UserConfig {
     tagName?: string;
     changelog?: false | ChangelogOptions;
   };
+  hooks?: Hooks;
 }
 
 export declare function defineConfig(config: UserConfig): UserConfig;

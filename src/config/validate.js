@@ -45,10 +45,12 @@ const configSchema = v.object({
         output: v.string(),
         configFile: v.string(),
         args: v.string(),
-        format: v.optional(v.string()),
       }),
     ]),
   }),
+
+  // hooks
+  hooks: v.optional(v.record(v.string())),
 });
 
 export function validateConfig(config) {
