@@ -14,20 +14,10 @@ Release made easy
 
 </div>
 
-## 特性
+## 文档
 
-- 非常轻量(本地仅执行 tag 与 push，CI负责后续发布流水线)
-- 交互式 CLI UI
-- 语义化版本（SemVer）管理（patch / minor / major / custom）
-- 确保在指定发布分支上执行发布
-- 确保 Git 工作目录干净
-- 集成灵活强大的 [git-cliff](https://github.com/orhun/git-cliff) 生成变更日志
-- 自动更新 package.json
-- 自动执行 Git 操作（add / commit / tag / push）
-- 支持灵活配置 npm [dist-tags](https://docs.npmjs.com/cli/dist-tag)
-- 防止预发布版本误发布到 npm `latest`
-- 发布失败自动回滚到初始状态
+[releaseasy 文档](https://releaseasy.github.io/releaseasy/)
 
-## 使用 releaseasy 的项目
+## 谁在用
 
 - adminlts

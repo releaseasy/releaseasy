@@ -1,6 +1,7 @@
 dist
 node_modules
 
-aaddd
+docs/.vitepress/dist
+docs/.vitepress/cache
 # 覆盖率
 coverage
