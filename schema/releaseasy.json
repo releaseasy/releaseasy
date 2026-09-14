@@ -1,77 +1,50 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cdn.jsdelivr.net/npm/releaseasy@latest/schema/releaseasy.json",
-  "title": "Releaseasy Configuration",
-  "description": "Configuration schema for Releaseasy.",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "releaseasy.json",
+  "title": "JSON schema for releaseasy configuration",
+  "description": "Configuration schema for releaseasy.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URL of the JSON Schema used to validate this configuration file."
+    },
+
     "increments": {
       "type": "array",
-      "description": "Version increments supported by the release command.",
+      "description": "Allowed semantic version increments.",
       "items": {
         "type": "string",
-        "enum": ["patch", "minor", "major"]
+        "enum": [
+          "major",
+          "premajor",
+          "minor",
+          "preminor",
+          "patch",
+          "prepatch",
+          "prerelease",
+          "release"
+        ]
       },
-      "uniqueItems": true,
-      "minItems": 1,
       "default": ["patch", "minor", "major"]
     },
+
     "distTags": {
       "type": "array",
-      "description": "npm dist-tags available when publishing a release.",
+      "description": "Distribution tags that can be used when publishing a release.",
       "items": {
-        "type": "string",
-        "minLength": 1
+        "type": "string"
       },
-      "uniqueItems": true,
-      "minItems": 1,
       "default": ["latest", "next"]
     },
+
     "git": {
-      "type": "object",
-      "description": "Git-related release configuration.",
-      "additionalProperties": false,
-      "properties": {
-        "requireBranch": {
-          "type": "string",
-          "description": "Require the release to be performed from this Git branch.",
-          "minLength": 1
-        },
-        "commitMessage": {
-          "type": "string",
-          "description": "Commit message template. The ${version} placeholder is replaced with the release version.",
-          "minLength": 1
-        },
-        "commitArgs": {
-          "type": "array",
-          "description": "Additional arguments passed to git commit.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "tagName": {
-          "type": "string",
-          "description": "Git tag name template. The ${version} placeholder is replaced with the release version.",
-          "minLength": 1
-        },
-        "changelog": {
-          "type": "object",
-          "description": "Changelog generation configuration.",
-          "additionalProperties": false,
-          "properties": {
-            "configFile": {
-              "type": "string",
-              "description": "Path to the git-cliff configuration file.",
-              "minLength": 1
-            },
-            "args": {
-              "type": "string",
-              "description": "Arguments passed to git-cliff. The ${version} placeholder is replaced with the release version."
-            }
-          }
-        }
-      }
+      "$ref": "./git.json"
+    },
+
+    "hooks": {
+      "$ref": "./hooks.json"
     }
   }
 }

@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "hooks.json",
+  "title": "JSON schema for releaseasy hooks configuration",
+  "description": "Lifecycle hooks configuration for releaseasy.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "before:changelog": {
+      "description": "Commands executed before generating the changelog.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+
+    "after:changelog": {
+      "description": "Commands executed after generating the changelog.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+
+    "before:bump": {
+      "description": "Commands executed before updating the package version.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+
+    "after:bump": {
+      "description": "Commands executed after updating the package version.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { outputFile, exists, runGitCliff } from "../utils/index.js";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
+import packageJson from "../../package.json" with { type: "json" };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,7 +28,7 @@ export async function generateFiles(options, context) {
   await assertCanWrite(configTarget, force);
   await assertCanWrite(cliffTarget, force);
 
-  await fs.copyFile(configTemplate, configTarget);
+  await writeConfigFile(configTemplate, configTarget, context);
 
   // 调用命令生成git-cliff的配置文件
   try {
@@ -71,4 +72,24 @@ function resolveConfigExtension(context) {
   }
 
   throw new Error(`Unsupported config format: ${configFormat}`);
+}
+
+async function writeConfigFile(template, target) {
+  if (path.extname(template) === ".json") {
+    return writeJsonConfig(template, target);
+  }
+
+  await fs.copyFile(template, target);
+}
+
+async function writeJsonConfig(template, target) {
+  const content = await fs.readFile(template, "utf8");
+  const config = JSON.parse(content);
+
+  const output = {
+    $schema: `https://cdn.jsdelivr.net/npm/releaseasy@${packageJson.version}/schema/releaseasy.json`,
+    ...config,
+  };
+
+  await fs.writeFile(target, JSON.stringify(output, null, 2) + "\n", "utf8");
 }

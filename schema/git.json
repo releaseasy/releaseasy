@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "git.json",
+  "title": "JSON schema for releaseasy Git configuration",
+  "description": "Git configuration for releaseasy.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "requireBranch": {
+      "description": "Restrict releases to specific Git branches.",
+      "oneOf": [
+        {
+          "type": "boolean",
+          "enum": [false]
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "default": false
+    },
+
+    "commitMessage": {
+      "type": "string",
+      "description": "Commit message used when creating the release commit.",
+      "default": "chore: release ${version}"
+    },
+
+    "addArgs": {
+      "type": "array",
+      "description": "Additional arguments passed to git add.",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+
+    "commitArgs": {
+      "type": "array",
+      "description": "Additional arguments passed to git commit.",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+
+    "tagName": {
+      "type": "string",
+      "description": "Name of the Git tag created for the release.",
+      "default": "v${version}"
+    },
+
+    "changelog": {
+      "description": "Changelog configuration. Set to false to disable changelog generation.",
+      "oneOf": [
+        {
+          "type": "boolean",
+          "enum": [false]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "output": {
+              "type": "string",
+              "description": "Path of the generated changelog file.",
+              "default": "CHANGELOG.md"
+            },
+
+            "configFile": {
+              "type": "string",
+              "description": "Path to the git-cliff configuration file.",
+              "default": "cliff.toml"
+            },
+
+            "args": {
+              "type": "string",
+              "description": "Arguments passed to git-cliff.",
+              "default": "-o ${output} --tag ${version}"
+            }
+          }
+        }
+      ],
+      "default": {
+        "output": "CHANGELOG.md",
+        "configFile": "cliff.toml",
+        "args": "-o ${output} --tag ${version}"
+      }
+    }
+  }
+}
