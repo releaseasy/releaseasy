@@ -1,3 +1,4 @@
+import { createConsola } from "consola";
 import path from "node:path";
 import { createDefu } from "defu";
 import { createRequire } from "node:module";
@@ -7,6 +8,12 @@ import { readPackageJSON } from "./pkg.js";
 import { interpolate } from "./interpolate.js";
 import { createSpinner } from "./spinner.js";
 import { x } from "tinyexec";
+
+export const logger = createConsola();
+
+export const loggerWithTag = logger.withDefaults({
+  tag: CONSTANTS.CLI_NAME,
+});
 
 export async function hasScripts(packageJsonPath, additions) {
   const packageJson = await readPackageJSON(packageJsonPath);
@@ -73,19 +80,47 @@ export async function runHook(options, hookName, context) {
     spinner.start();
 
     try {
-      await x(cmd, [], {
-        throwOnError: true,
-        nodeOptions: {
-          cwd,
-          shell: true,
-          stdio: verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
-        },
-      });
-
+      await execCommand(cmd, [], options, { nodeOptions: { shell: true } });
       spinner.succeed(cmd);
     } catch (error) {
       spinner.fail(cmd);
       throw error;
     }
   }
+}
+
+export async function execCommand(command, args, options, execOptions = {}) {
+  const { cwd, verbose } = options;
+  if (verbose >= CONSTANTS.LOG_LEVEL.VERBOSE) {
+    printCommand(command, args);
+  }
+  return await x(
+    command,
+    args,
+    defu(execOptions, {
+      throwOnError: true,
+      nodeOptions: {
+        cwd: cwd,
+        stdio: verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
+      },
+    }),
+  );
+}
+
+function printCommand(command, args) {
+  loggerWithTag.log(`${ansis.dim("$")} ${ansis.cyan(command)} ${ansis.yellow(formatArgs(args))}`);
+}
+
+function formatArgs(args = []) {
+  return args
+    .map((arg) => {
+      const value = String(arg);
+
+      if (/^[\w./:@%+=,-]+$/.test(value)) {
+        return value;
+      }
+
+      return JSON.stringify(value);
+    })
+    .join(" ");
 }

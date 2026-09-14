@@ -1,4 +1,3 @@
-export { consola as logger } from "consola";
 export * from "./helpers.js";
 export * from "./fs.js";
 export * from "./pkg.js";
