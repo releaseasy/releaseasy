@@ -8,7 +8,7 @@ hero:
     alt: releaseasy
   name: releaseasy
   text: 让版本发布更简单的 CLI
-  tagline: 让每一次发布都更简单
+  tagline: 让每一次发布都成为一种享受
   actions:
     - theme: brand
       text: 快速开始
