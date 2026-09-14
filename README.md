@@ -10,7 +10,7 @@
 [![Test](https://img.shields.io/github/actions/workflow/status/releaseasy/releaseasy/test.yml?label=Test&logo=github&style=flat-square&branch=main)](https://github.com/releaseasy/releaseasy/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/releaseasy/releaseasy/blob/main/LICENSE)
 
-Release made easy
+让版本发布更简单的 CLI
 
 </div>
 
