@@ -22,25 +22,11 @@ Release made easy
 - 确保在指定发布分支上执行发布
 - 确保 Git 工作目录干净
 - 集成灵活强大的 [git-cliff](https://github.com/orhun/git-cliff) 生成变更日志
-- 自动更新 package.json 和 lock(如果存在) 文件版本
+- 自动更新 package.json
 - 自动执行 Git 操作（add / commit / tag / push）
 - 支持灵活配置 npm [dist-tags](https://docs.npmjs.com/cli/dist-tag)
 - 防止预发布版本误发布到 npm `latest`
 - 发布失败自动回滚到初始状态
-- dsaaddddddddd
-
-- -v:把内部的命令的执行信息打印出来
-- -vv 把将要执行的命令也打印出来
-- -vvv ： 把报错的堆栈也打印出来
-
-## 格式化变更日志
-
-```bash
-pnpm oxfmt CHANGELOG.md
-pnpm oxfmt ${changelog}
-pnpm prettier --write CHANGELOG.md
-pnpm prettier --write ${changelog}
-```
 
 ## 使用 releaseasy 的项目
 
