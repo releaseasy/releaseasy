@@ -9,7 +9,7 @@ const DEFAULTS = {
     requireBranch: "main",
     commitMessage: "release: v${version}",
     addArgs: ["."],
-    commitArgs: ["-s"],
+    commitArgs: ["--no-verify", "-s"],
     tagName: "v${version}",
     changelog: {
       output: "CHANGELOG.md",
