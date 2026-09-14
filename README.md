@@ -20,4 +20,6 @@
 
 ## 谁在用
 
+以下项目正在使用 releaseasy（欢迎提交 PR 添加你的项目）：
+
 - adminlts
