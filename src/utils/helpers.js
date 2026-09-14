@@ -90,25 +90,25 @@ export async function runHook(options, hookName, context) {
 }
 
 export async function execCommand(command, args, options, execOptions = {}) {
-  const { cwd, verbose } = options;
-  if (verbose >= CONSTANTS.LOG_LEVEL.VERBOSE) {
-    printCommand(command, args);
-  }
+  logCommand(options, command, args);
+
   return await x(
     command,
     args,
     defu(execOptions, {
       throwOnError: true,
       nodeOptions: {
-        cwd: cwd,
-        stdio: verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
+        cwd: options.cwd,
+        stdio: options.verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
       },
     }),
   );
 }
 
-function printCommand(command, args) {
-  loggerWithTag.log(`${ansis.dim("$")} ${ansis.cyan(command)} ${ansis.yellow(formatArgs(args))}`);
+export function logCommand(options, displayCommand, args) {
+  if (isVerbose(options)) {
+    loggerWithTag.log(ansis.yellow(`$ ${displayCommand} ${formatArgs(args)}`));
+  }
 }
 
 function formatArgs(args = []) {

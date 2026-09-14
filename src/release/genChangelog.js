@@ -1,5 +1,5 @@
 import { Spinner } from "picospinner";
-import { runGitCliff, runHook } from "../utils/index.js";
+import { logCommand, runGitCliff, runHook } from "../utils/index.js";
 import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
 
 export async function genChangelog(options, context) {
@@ -12,8 +12,10 @@ export async function genChangelog(options, context) {
 
   await withSpinner(options, "Generating changelog, please wait…", async () => {
     try {
+      logCommand(options, "git-cliff", args);
       await runGitCliff(args, {
         nodeOptions: {
+          cwd: options.cwd,
           stdio: isVerbose(options) ? "inherit" : "pipe",
         },
       });
