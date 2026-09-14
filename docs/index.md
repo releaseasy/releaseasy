@@ -5,8 +5,8 @@ layout: home
 hero:
   image:
     src: /logo-large.svg
-    alt: Smarty-Release
-  name: Smarty-Release
+    alt: releaseasy
+  name: releaseasy
   text: "用于 npm 包版本管理与发布的智能 CLI"
   tagline: "更好，更智能的 `npm publish`"
   actions:
@@ -15,7 +15,7 @@ hero:
       link: /guide/
     - theme: alt
       text: Github
-      link: https://github.com/smarty-release/smarty-release
+      link: https://github.com/releaseasy/releaseasy
 
 features:
   - title: 语义化版本

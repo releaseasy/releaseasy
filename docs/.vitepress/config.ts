@@ -1,17 +1,14 @@
 import { defineConfig } from "vitepress";
-import {
-  groupIconMdPlugin,
-  groupIconVitePlugin,
-} from "vitepress-plugin-group-icons";
+import { groupIconMdPlugin, groupIconVitePlugin } from "vitepress-plugin-group-icons";
 import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "Smarty-Release",
-  base: "/smarty-release/",
+  title: "releaseasy",
+  base: "/releaseasy/",
   description: "更智能的 `npm publish`",
   head: [
-    ["link", { rel: "icon", href: "favicon.svg", type: "image/svg+xml" }],
+    ["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
     [
       "meta",
       {
@@ -75,7 +72,7 @@ export default defineConfig({
     socialLinks: [
       {
         icon: "github",
-        link: "https://github.com/smarty-release/smarty-release",
+        link: "https://github.com/releaseasy/releaseasy",
       },
     ],
   },
