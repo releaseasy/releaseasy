@@ -59,7 +59,7 @@
     "rolldown:watch": "rolldown -c -w",
     "build": "run-s clean rolldown size",
     "docs:build": "vitepress build docs",
-    "docs:dev": "vitepress dev docs --open",
+    "docs:dev": "vitepress dev docs",
     "docs:preview": "vitepress preview docs",
     "test": "vitest --coverage",
     "test:ui": "pnpm run test --ui",

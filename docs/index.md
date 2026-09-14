@@ -7,8 +7,8 @@ hero:
     src: /logo-large.svg
     alt: releaseasy
   name: releaseasy
-  text: "用于 npm 包版本管理与发布的智能 CLI"
-  tagline: "更好，更智能的 `npm publish`"
+  text: 让版本发布更简单的 CLI
+  tagline: 让每一次发布都更简单
   actions:
     - theme: brand
       text: 快速开始
@@ -21,7 +21,9 @@ features:
   - title: 语义化版本
     details: 智能计算并推荐语义化版本
   - title: 变更日志
-    details: 自动生成变更日志(比如 CHANGELOG.md)
+    details: 自动生成变更日志 CHANGELOG.md
   - title: hooks
     details: 支持灵活的hooks
+  - title: 自动回滚
+    details: 如果发布失败，则将项目回滚到之前的状态
 ---
