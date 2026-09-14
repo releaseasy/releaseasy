@@ -1,5 +1,5 @@
 import { x } from "tinyexec";
-import { defu } from "../utils/helpers.js";
+import { defu, execCommand } from "../utils/helpers.js";
 
 function git(options, args, execOptions = {}) {
   return x(
@@ -13,15 +13,6 @@ function git(options, args, execOptions = {}) {
       },
     }),
   );
-}
-
-function gitWithVerbose(options, args) {
-  // 这里后期都还要优化
-  return git(options, args, {
-    nodeOptions: {
-      stdio: "pipe",
-    },
-  });
 }
 
 export async function isGitAvailable(options) {
@@ -105,18 +96,23 @@ export async function rollback(options, context) {
 }
 
 export async function add(options) {
-  await gitWithVerbose(options, ["add", ...options.git.addArgs]);
+  await execCommand("git", ["add", ...options.git.addArgs], options);
 }
 
 export async function commit(options, context) {
-  await gitWithVerbose(options, ["commit", ...options.git.commitArgs, "-m", context.commitMessage]);
+  await execCommand(
+    "git",
+    ["commit", ...options.git.commitArgs, "-m", context.commitMessage],
+    options,
+  );
 }
 
 export async function tag(options, context) {
-  await gitWithVerbose(options, ["tag", "-f", context.tagName]);
+  await execCommand("git", ["tag", "-f", context.tagName], options);
+
   context.tagCreated = true;
 }
 
 export async function push(options, context) {
-  await gitWithVerbose(options, ["push", "origin", "HEAD", `refs/tags/${context.tagName}`]);
+  await execCommand("git", ["push", "origin", "HEAD", `refs/tags/${context.tagName}`], options);
 }

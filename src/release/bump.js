@@ -1,4 +1,4 @@
-import { readPackageJSON, writePackageJSON } from "../utils/index.js";
+import { readPackageJSON, writePackageJSON, runHook } from "../utils/index.js";
 
 export async function bump(options, context) {
   const { version, tag, packageJsonPath } = context;
