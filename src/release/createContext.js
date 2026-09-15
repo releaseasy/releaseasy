@@ -93,6 +93,7 @@ export async function createContext(options) {
       CONSTANTS.CLI_NAME,
       "changelog",
       "--init",
+      "[template]",
     ]);
 
     if (!(await exists(resolvedCliffFile))) {
