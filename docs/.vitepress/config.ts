@@ -8,7 +8,7 @@ export default defineConfig({
   base: "/releaseasy/",
   description: "更智能的 `npm publish`",
   head: [
-    ["link", { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }],
+    ["link", { rel: "icon", href: "favicon.svg", type: "image/svg+xml" }],
     [
       "meta",
       {
