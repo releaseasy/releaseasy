@@ -48,6 +48,10 @@ const CONFIG_FORMAT_CHOICES = [
 
 const CHANGELOG_FORMAT_CHOICES = [
   {
+    name: "Default",
+    value: "default",
+  },
+  {
     name: "Keep a Changelog",
     value: "keepachangelog",
   },

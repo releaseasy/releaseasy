@@ -42,7 +42,12 @@ export async function generateFiles(options, context) {
 
   // 调用命令生成git-cliff的配置文件
   try {
-    await runGitCliff(["--init", changelogFormat], {
+    const args = ["--init"];
+    if (changelogFormat !== "default") {
+      args.push(changelogFormat);
+    }
+
+    await runGitCliff(args, {
       nodeOptions: {
         stdio: "pipe",
       },

@@ -10,6 +10,7 @@ export async function promptInit(context) {
 
   const changelogFormat = await select({
     message: "Which changelog format?",
+    default: "default",
     choices: CONSTANTS.CHANGELOG_FORMAT_CHOICES,
   });
 
