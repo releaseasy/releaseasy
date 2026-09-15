@@ -1,34 +1,44 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { outputFile, exists, runGitCliff } from "../utils/index.js";
+import { exists, runGitCliff, updatePackageJSON } from "../utils/index.js";
 import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
 import packageJson from "../../package.json" with { type: "json" };
+import jsonConfig from "../init/templates/releaseasy.config.json" with { type: "json" };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TEMPLATE_DIR = path.join(__dirname, "templates");
 
 export async function generateFiles(options, context) {
-  const { changelogFormat, cwd } = context;
+  const { changelogFormat, cwd, configFormat, packageJsonPath } = context;
   const { force } = options;
-  const configExtension = resolveConfigExtension(context);
 
-  const configFile = `releaseasy.config.${configExtension}`;
-  const configTemplate = path.join(TEMPLATE_DIR, configFile);
+  let configFile, configAction;
+  if (configFormat === "packageJson") {
+    configFile = "package.json";
+    configAction = CONSTANTS.CONFIG_ACTION.UPDATED;
+    await generatePackageJsonConfig(packageJsonPath, force);
+  } else {
+    configAction = CONSTANTS.CONFIG_ACTION.CREATED;
+    const configExtension = resolveConfigExtension(context);
 
-  if (!(await exists(configTemplate))) {
-    throw new Error(`Template not found: ${configTemplate}`);
+    configFile = `${CONSTANTS.CLI_NAME}.config.${configExtension}`;
+    const configTemplate = path.join(TEMPLATE_DIR, configFile);
+
+    if (!(await exists(configTemplate))) {
+      throw new Error(`Template not found: ${configTemplate}`);
+    }
+
+    const configTarget = path.join(cwd, configFile);
+    const cliffTarget = path.join(cwd, CONSTANTS.CLIFF_FILE);
+
+    await assertCanWrite(configTarget, force);
+    await assertCanWrite(cliffTarget, force);
+
+    await writeConfigFile(configTemplate, configTarget, context);
   }
-
-  const configTarget = path.join(cwd, configFile);
-  const cliffTarget = path.join(cwd, CONSTANTS.CLIFF_FILE);
-
-  await assertCanWrite(configTarget, force);
-  await assertCanWrite(cliffTarget, force);
-
-  await writeConfigFile(configTemplate, configTarget, context);
 
   // 调用命令生成git-cliff的配置文件
   try {
@@ -44,7 +54,21 @@ export async function generateFiles(options, context) {
   // 保存到上下文
   Object.assign(context, {
     configFile,
+    configAction,
     cliffFile: CONSTANTS.CLIFF_FILE,
+  });
+}
+
+async function generatePackageJsonConfig(packageJsonPath, force) {
+  await updatePackageJSON(packageJsonPath, (packageJson) => {
+    if (packageJson[CONSTANTS.CLI_NAME] && !force) {
+      throw new Error(
+        `Field ${ansis.yellow(CONSTANTS.CLI_NAME)} already exists in package.json. ` +
+          `Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
+      );
+    }
+
+    packageJson[[CONSTANTS.CLI_NAME]] = jsonConfig;
   });
 }
 

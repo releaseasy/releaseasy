@@ -40,6 +40,10 @@ const CONFIG_FORMAT_CHOICES = [
     name: "JSON",
     value: "json",
   },
+  {
+    name: "package.json",
+    value: "packageJson",
+  },
 ];
 
 const CHANGELOG_FORMAT_CHOICES = [
@@ -89,11 +93,17 @@ const CHANGELOG_FORMAT_CHOICES = [
   },
 ];
 
+const CONFIG_ACTION = {
+  CREATED: "Created",
+  UPDATED: "Updated",
+};
+
 const DEFAULT_SCRIPTS = {
   release: CLI_NAME,
 };
 
 export default {
+  CONFIG_ACTION,
   DEFAULT_SCRIPTS,
   DEFAULTS,
   CLI_NAME,
