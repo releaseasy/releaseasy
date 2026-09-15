@@ -6,6 +6,7 @@ import {
   resolvePackageJSON,
   readPackageJSON,
   isPackageInstalled,
+  detectPackageManager,
 } from "../utils/index.js";
 
 export async function createContext(options) {
@@ -14,10 +15,7 @@ export async function createContext(options) {
 
   const packageJsonPath = await resolvePackageJSON(resolvedCwd);
 
-  const packageManager = await detect({ cwd: resolvedCwd });
-  if (!packageManager) {
-    throw new Error("Could not detect the package manager used by this project.");
-  }
+  const packageManager = await detectPackageManager(resolvedCwd);
 
   const packageJson = await readPackageJSON(packageJsonPath);
 

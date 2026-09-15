@@ -8,11 +8,15 @@ import {
   getCurrentCommitSha,
   getCurrentBranch,
   readPackageJSON,
+  detectPackageManager,
   exists,
+  formatCommand,
 } from "../utils/index.js";
 import { valid } from "semver";
 import path from "node:path";
 import ansis from "ansis";
+import CONSTANTS from "../constants/index.js";
+import { resolveCommand } from "package-manager-detector/commands";
 
 export async function createContext(options) {
   const { cwd, git } = options;
@@ -20,6 +24,7 @@ export async function createContext(options) {
   // 判断目录
   const resolvedCwd = await assertDirectory(cwd);
   const packageJsonPath = await resolvePackageJSON(cwd);
+  const packageManager = await detectPackageManager(resolvedCwd);
 
   if (!(await isGitAvailable(options))) {
     throw new Error(
@@ -79,10 +84,22 @@ export async function createContext(options) {
     // 判断配置文件是否存在
     resolvedCliffFile = path.join(resolvedCwd, git.changelog.configFile);
 
+    const initCommand = resolveCommand(packageManager.agent, "execute-local", [
+      CONSTANTS.CLI_NAME,
+      "init",
+    ]);
+
+    const changelogCommand = resolveCommand(packageManager.agent, "execute-local", [
+      CONSTANTS.CLI_NAME,
+      "changelog",
+      "--init",
+    ]);
+
     if (!(await exists(resolvedCliffFile))) {
       throw Error(
         `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +
-          `Run "${ansis.cyan("releaseasy init")}" to initialize the configuration.`,
+          `Run "${ansis.cyan(formatCommand(initCommand))}" to initialize the configuration.\n` +
+          `or "${ansis.cyan(formatCommand(changelogCommand))}" to initialize the Git-cliff configuration.`,
       );
     }
   }

@@ -8,12 +8,27 @@ import { readPackageJSON } from "./pkg.js";
 import { interpolate } from "./interpolate.js";
 import { createSpinner } from "./spinner.js";
 import { x } from "tinyexec";
+import { detect } from "package-manager-detector";
 
 export const logger = createConsola();
 
 export const loggerWithTag = logger.withDefaults({
   tag: CONSTANTS.CLI_NAME,
 });
+
+export async function detectPackageManager(cwd) {
+  const packageManager = await detect({ cwd });
+
+  if (!packageManager) {
+    throw new Error("Could not detect the package manager used by this project.");
+  }
+
+  return packageManager;
+}
+
+export function formatCommand(command) {
+  return [command.command, ...command.args].join(" ");
+}
 
 export async function hasScripts(packageJsonPath, additions) {
   const packageJson = await readPackageJSON(packageJsonPath);

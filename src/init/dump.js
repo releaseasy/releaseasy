@@ -1,5 +1,5 @@
 import ansis from "ansis";
-import { hasScripts, logger } from "../utils/index.js";
+import { hasScripts, logger, formatCommand } from "../utils/index.js";
 import CONSTANTS from "../constants/index.js";
 import { resolveCommand } from "package-manager-detector/commands";
 
@@ -22,8 +22,4 @@ export async function dump(context) {
   Run:
     ${ansis.cyan(formatCommand(command))}
   `);
-}
-
-function formatCommand(command) {
-  return [command.command, ...command.args].join(" ");
 }
