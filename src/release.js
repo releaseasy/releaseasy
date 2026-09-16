@@ -38,7 +38,8 @@ export async function release(options) {
     });
 
     await summary(options, context);
-    await git(options, context);
+
+    await runSideEffect(options, `Git operations`, async () => await git(options, context));
 
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
