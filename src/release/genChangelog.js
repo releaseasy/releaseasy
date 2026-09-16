@@ -3,8 +3,6 @@ import { logCommand, runGitCliff, runHook } from "../utils/index.js";
 import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
 
 export async function genChangelog(options, context) {
-  if (options.git.changelog === false) return;
-
   // 前置钩子
   await runHook(options, "before:changelog", context);
 

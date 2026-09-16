@@ -16,6 +16,15 @@ export const loggerWithTag = logger.withDefaults({
   tag: CONSTANTS.CLI_NAME,
 });
 
+export async function runSideEffect(options, description, action) {
+  if (options.dryRun) {
+    loggerWithTag.info(ansis.yellow(`[dry-run] would ${description}`));
+    return;
+  }
+
+  return await action();
+}
+
 export async function detectPackageManager(cwd) {
   const packageManager = await detect({ cwd });
 
