@@ -1,7 +1,7 @@
 import { readPackageJSON, writePackageJSON, runHook } from "../utils/index.js";
 
 export async function bump(options, context) {
-  const { version, tag, packageJsonPath } = context;
+  const { version, distTag, packageJsonPath } = context;
 
   await runHook(options, "before:bump", context);
 
@@ -13,7 +13,7 @@ export async function bump(options, context) {
   // 写入tag
   pkg.publishConfig = {
     ...pkg.publishConfig,
-    tag,
+    tag: distTag,
   };
 
   await writePackageJSON(packageJsonPath, pkg);

@@ -48,10 +48,8 @@ export default defineConfig({
           items: [
             { text: "简介", link: "/" },
             { text: "快速开始", link: "getting-started" },
-            { text: "配置文件", link: "config-file" },
             { text: "变更日志", link: "changelog" },
             { text: "Hooks", link: "hooks" },
-            { text: "演练模式", link: "dry-run" },
             { text: "后续CI/CD 集成", link: "cicd" },
           ],
         },
@@ -62,7 +60,6 @@ export default defineConfig({
           text: "参考",
           base: "/reference/",
           items: [
-            { text: "生命周期", link: "lifecycle" },
             { text: "CLI", link: "cli" },
             { text: "配置", link: "configuration" },
           ],
