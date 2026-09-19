@@ -47,3 +47,5 @@ bun releaseasy init
 :::
 
 将需要回答几个简单的问题：
+
+<<< @/snippets/init.ansi
