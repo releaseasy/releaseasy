@@ -24,4 +24,4 @@
 
 ## 贡献
 
-提交 Pull Request 前，请先阅读 [贡献指南](https://github.com/releaseasy/releaseasy/blob/main/.github/contributing.md)。
+提交 Pull Request 前，请先阅读 [贡献指南](https://github.com/releaseasy/releaseasy/blob/main/.github/CONTRIBUTING.md)。
