@@ -1,6 +1,6 @@
 # 贡献指南
 
-简体中文 | [English](./CONTRIBUTING.en.md)
+简体中文 | [English](https://github.com/releaseasy/releaseasy/blob/main/.github/CONTRIBUTING.en.md)
 
 ---
 
