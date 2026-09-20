@@ -1,51 +1,20 @@
-# 快速开始
+# quickstart
 
-## 安装
-
-::: code-group
-
-```sh [npm]
-npm add -D releaseasy
+```js
+fdsdf;
 ```
 
-```sh [pnpm]
-pnpm add -D releaseasy
-```
+> [!NOTE]
+> 强调用户在快速浏览文档时也不应忽略的重要信息。
 
-```sh [yarn]
-yarn add -D releaseasy
-```
+> [!TIP]
+> 有助于用户更顺利达成目标的建议性信息。
 
-```sh [bun]
-bun add -D releaseasy
-```
+> [!IMPORTANT]
+> 对用户达成目标至关重要的信息。
 
-:::
+> [!WARNING]
+> 因为可能存在风险，所以需要用户立即关注的关键内容。
 
-## 安装向导
-
-releaseasy 附带一个命令行设置向导，可以帮助你快速生成基本的配置文件。安装后，通过运行以下命令启动向导：
-
-::: code-group
-
-```sh [npm]
-npx releaseasy init
-```
-
-```sh [pnpm]
-pnpm releaseasy init
-```
-
-```sh [yarn]
-yarn releaseasy init
-```
-
-```sh [bun]
-bun releaseasy init
-```
-
-:::
-
-将需要回答几个简单的问题：
-
-<<< @/snippets/init.ansi
+> [!CAUTION]
+> 行为可能带来的负面影响。

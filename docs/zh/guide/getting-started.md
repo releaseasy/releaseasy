@@ -57,10 +57,10 @@ bun releaseasy init
 - releaseasy.config.mjs
 - cliff.toml
 
-一个是 releaseasy 所需的配置文件一个是[git-cliff](https://github.com/orhun/git-cliff)的配置文件。
+一个是 releaseasy 所需的配置文件一个是[git-cliff](https://git-cliff.org/docs/usage/initializing)的配置文件。
 
-- releaseasy 有关所有配置选项的完整详细信息，请参见[配置](/reference/option-config)参考。
-- git-cliff 有关所有配置选项的完整详细信息，请参见[git-cliff的配置](https://git-cliff.org/docs/configuration/)页面。
+> [!TIP]
+> releaseasy 有关所有配置选项的完整详细信息，请参见[配置](/reference/config)参考。
 
 ## 启动并运行 {#up-and-running}
 
