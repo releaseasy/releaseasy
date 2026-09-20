@@ -6,7 +6,7 @@ import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
 export default defineConfig({
   title: "releaseasy",
   base: "/releaseasy/",
-  description: "更智能的 `npm publish`",
+  description: "让版本发布更简单的 CLI",
   rewrites: {
     "zh/:rest*": ":rest*",
   },
@@ -81,9 +81,11 @@ function sidebarGuide(): DefaultTheme.SidebarItem[] {
       text: "进阶",
       collapsed: false,
       items: [
+        { text: "后续CI/CD 集成", link: "cicd" },
+        { text: "配置文件", link: "config-file" },
         { text: "变更日志", link: "changelog" },
         { text: "Hooks", link: "hooks" },
-        { text: "后续CI/CD 集成", link: "cicd" },
+        { text: "演练模式", link: "dry-run" },
       ],
     },
 
@@ -99,12 +101,13 @@ function sidebarReference(): DefaultTheme.SidebarItem[] {
         { text: "CLI", link: "cli" },
         {
           text: "配置选项",
-          base: "/reference/option-",
+          // base: "/reference/option-",
           items: [
-            { text: "increments", link: "increments" },
-            { text: "distTags", link: "dist-tags" },
-            { text: "git", link: "git" },
-            { text: "hooks", link: "hooks" },
+            { text: "概览", link: "config" },
+            { text: "increments", link: "option-increments" },
+            { text: "distTags", link: "option-dist-tags" },
+            { text: "git", link: "option-git" },
+            { text: "hooks", link: "option-hooks" },
           ],
         },
       ],
