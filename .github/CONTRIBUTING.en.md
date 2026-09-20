@@ -1,6 +1,6 @@
 # Contributing Guide
 
-简体中文 | [English](.github/CONTRIBUTING.md)
+简体中文 | [English](./CONTRIBUTING.md)
 
 ---
 
