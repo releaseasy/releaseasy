@@ -17,3 +17,11 @@
 ## 文档
 
 [releaseasy 文档](https://releaseasy.github.io/releaseasy/)
+
+## 更新日志
+
+每个版本的详细变更记录请参阅 [更新日志](https://github.com/releaseasy/releaseasy/blob/main/CHANGELOG.md)。
+
+## 贡献
+
+提交 Pull Request 前，请先阅读 [贡献指南](https://github.com/releaseasy/releaseasy/blob/main/.github/contributing.md)。
