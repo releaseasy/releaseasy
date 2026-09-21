@@ -63,7 +63,14 @@ const configSchema = v.object({
   // hooks
   hooks: v.optional(
     v.record(
-      v.picklist(["before:changelog", "after:changelog", "before:bump", "after:bump"]),
+      v.picklist([
+        "before:init",
+        "before:changelog",
+        "after:changelog",
+        "before:bump",
+        "after:bump",
+        "after:release",
+      ]),
       v.union([v.string(), v.array(v.string())]),
     ),
   ),

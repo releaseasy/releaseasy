@@ -2,18 +2,18 @@ import { defineAdditionalConfig, type DefaultTheme, type MarkdownLocaleOptions }
 
 export const markdown: MarkdownLocaleOptions = {
   container: {
-    tipLabel: "提示",
-    infoLabel: "信息",
-    warningLabel: "警告",
-    dangerLabel: "危险",
-    detailsLabel: "详细信息",
-    noteLabel: "注意",
-    importantLabel: "重要",
-    cautionLabel: "小心",
+    tipLabel: "d",
+    infoLabel: "a",
+    warningLabel: "警dsa告",
+    dangerLabel: "dsa",
+    detailsLabel: "详细d信息",
+    noteLabel: "dsa",
+    importantLabel: "qq",
+    cautionLabel: "ee",
   },
   codeCopyButton: {
-    // tooltipText: "aaa",
-    // copiedText: "ddd",
+    tooltipText: "aaa",
+    copiedText: "ddd",
   },
 };
 
@@ -22,6 +22,11 @@ export default defineAdditionalConfig({
 
   themeConfig: {
     nav: nav(),
+
+    editLink: {
+      pattern: "https://github.com/releaseasy/releaseasy/edit/main/docs/:path",
+      text: "在 GitHub 上编辑此页面daaa",
+    },
 
     sidebar: {
       "/en/guide/": { base: "/en/guide/", items: sidebarGuide() },

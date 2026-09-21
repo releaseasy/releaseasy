@@ -14,6 +14,7 @@ import {
   rollback,
   logger,
   runSideEffect,
+  runHook,
 } from "./utils/index.js";
 import ansis from "ansis";
 
@@ -23,6 +24,7 @@ export async function release(options) {
   const context = await createContext(options);
 
   try {
+    await runHook(options, "before:init", context);
     await selectVersion(options, context);
     await selectTag(options, context);
 
@@ -40,6 +42,8 @@ export async function release(options) {
     await summary(options, context);
 
     await runSideEffect(options, `Git operations`, async () => await git(options, context));
+
+    await runHook(options, "after:release", context);
 
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));

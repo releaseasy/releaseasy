@@ -61,18 +61,10 @@ export default defineConfig({
         link: "https://github.com/releaseasy/releaseasy",
       },
     ],
-    editLink: {
-      pattern: "https://github.com/releaseasy/releaseasy/edit/main/docs/:path",
-      text: "在 GitHub 上编辑此页面",
-    },
+
     footer: {
       message: "基于 MIT 许可发布",
-      copyright: "版权所有 © 2019-至今 尤雨溪",
-    },
-
-    docFooter: {
-      prev: "上一页",
-      next: "下一页",
+      copyright: "版权所有 © 2026-至今 ajiho",
     },
 
     outline: {
@@ -98,6 +90,46 @@ export default defineConfig({
     lightModeSwitchTitle: "切换到浅色模式",
     darkModeSwitchTitle: "切换到深色模式",
     skipToContentLabel: "跳转到内容",
+
+    editLink: {
+      pattern: "https://github.com/releaseasy/releaseasy/edit/main/docs/:path",
+      text: "在 GitHub 上编辑此页面",
+    },
+    docFooter: {
+      prev: "上一页",
+      next: "下一页",
+    },
+    search: {
+      provider: "local",
+      options: {
+        locales: {
+          root: {
+            // 如果你想翻译默认语言，请将此处设为 `root`
+            translations: {
+              button: {
+                buttonText: "搜索",
+                buttonAriaLabel: "搜索",
+              },
+              modal: {
+                displayDetails: "显示详细列表",
+                resetButtonTitle: "重置搜索",
+                backButtonTitle: "关闭搜索",
+                noResultsText: "没有结果",
+                footer: {
+                  selectText: "选择",
+                  selectKeyAriaLabel: "输入",
+                  navigateText: "导航",
+                  navigateUpKeyAriaLabel: "上箭头",
+                  navigateDownKeyAriaLabel: "下箭头",
+                  closeText: "关闭",
+                  closeKeyAriaLabel: "Esc",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   locales: {
     root: { label: "简体中文", lang: "zh-Hans", dir: "ltr" },

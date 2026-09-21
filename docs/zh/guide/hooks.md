@@ -1,15 +1,9 @@
 # Hooks
 
-目前releaseasy只提供了下面几个钩子：
+该钩子的作用是在特定的阶段执行一些 shell 脚本。
 
-```
-"before:changelog"
-"after:changelog"
-"before:bump"
-"after:bump"
-```
-
-该钩子的作用是在特定的阶段执行一些shell脚本。
+> [!TIP]
+> 点此查看目前支持的[生命周期钩子](/reference/option-hooks#life-cycle)列表。
 
 ## 变更日志生成后格式化
 
