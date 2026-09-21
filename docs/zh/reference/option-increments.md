@@ -16,10 +16,10 @@ export default {
 | 值           | 说明                       |
 | ------------ | -------------------------- |
 | `major`      | 主版本递增                 |
-| `premajor`   | 预主版本递增               |
 | `minor`      | 次版本递增                 |
-| `preminor`   | 预次版本递增               |
 | `patch`      | 修订版本递增               |
+| `premajor`   | 预主版本递增               |
+| `preminor`   | 预次版本递增               |
 | `prepatch`   | 预修订版本递增             |
 | `prerelease` | 递增预发布版本             |
 | `release`    | 从预发布版本恢复为正式版本 |
@@ -48,10 +48,10 @@ export default {
 export default {
   increments: [
     "major",
-    "premajor",
     "minor",
-    "preminor",
     "patch",
+    "premajor",
+    "preminor",
     "prepatch",
     "prerelease",
     "release",
