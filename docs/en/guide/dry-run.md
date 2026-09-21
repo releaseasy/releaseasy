@@ -1,13 +1,21 @@
-# 演练模式
+# Dry Run Mode
 
-`Smarty-Release`默认会检查当前Git工作区是否干净,以及可能的写入/修改的操作。
+releaseasy's changelog generation, bump, and git stages may make changes to the current repository.
 
-这对于想对于调试流程极为不便,因为每次修改完配置文件它都会要求你保持工作区是干净的。
-
-为了展示交互性以及它将执行的命令,您可以使用`--dry-run`选项：
+If you just want to try out the interactivity, you can use the `--dry-run` option:
 
 ```bash
-smarty-release --dry-run
+releaseasy --dry-run
 ```
 
-它不会破坏你当前工作区的任何内容。
+It will not destroy anything in your current workspace.
+
+## Automatic Rollback
+
+Alternatively, you can also run the release process normally:
+
+```bash
+releaseasy
+```
+
+When you reach the final confirmation push stage and press `Ctrl + C`, it will also automatically return to the repository's initial state.
