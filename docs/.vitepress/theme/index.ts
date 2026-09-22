@@ -3,7 +3,6 @@ import type { Theme } from "vitepress";
 import { h, nextTick, watch } from "vue";
 import { useData } from "vitepress";
 import DefaultTheme from "vitepress/theme";
-import { enhanceAppWithTabs } from "vitepress-plugin-tabs/client";
 import { createMermaidRenderer } from "vitepress-mermaid-renderer";
 
 export default {
@@ -59,9 +58,5 @@ export default {
     });
 
     return h(DefaultTheme.Layout);
-  },
-
-  enhanceApp({ app }) {
-    enhanceAppWithTabs(app);
   },
 } satisfies Theme;

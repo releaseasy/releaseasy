@@ -1,6 +1,5 @@
 import { defineConfig, type DefaultTheme } from "vitepress";
 import { groupIconMdPlugin, groupIconVitePlugin } from "vitepress-plugin-group-icons";
-import { tabsMarkdownPlugin } from "vitepress-plugin-tabs";
 import { markdown as enMarkdown } from "../en/config.ts";
 
 // https://vitepress.dev/reference/site-config
@@ -39,7 +38,6 @@ export default defineConfig({
     },
     config(md) {
       md.use(groupIconMdPlugin);
-      md.use(tabsMarkdownPlugin);
     },
   },
   vite: {
