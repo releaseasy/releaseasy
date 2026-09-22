@@ -11,6 +11,9 @@ hero:
   tagline: 让每一次发布都成为一种享受
   actions:
     - theme: brand
+      text: 什么是 releaseasy?
+      link: /guide/what-is-releaseasy
+    - theme: alt
       text: 快速开始
       link: /guide/getting-started
     - theme: alt

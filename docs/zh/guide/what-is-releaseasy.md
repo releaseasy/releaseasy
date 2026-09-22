@@ -1,4 +1,4 @@
-# 介绍
+# 什么是 releaseasy?
 
 releaseasy 是一个面向 npm 包的轻量级发布编排工具，在本地完成版本与 Git Tag 管理并推送至远程仓库，后续构建与发布流程交由 CI/CD 自动完成。
 

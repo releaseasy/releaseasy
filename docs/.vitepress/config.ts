@@ -139,7 +139,7 @@ export default defineConfig({
 
 function nav(): DefaultTheme.NavItem[] {
   return [
-    { text: "指南", link: "/guide/", activeMatch: "/guide/" },
+    { text: "指南", link: "/guide/what-is-releaseasy", activeMatch: "/guide/" },
     {
       text: "参考",
       link: "/reference/cli",
@@ -151,10 +151,10 @@ function nav(): DefaultTheme.NavItem[] {
 function sidebarGuide(): DefaultTheme.SidebarItem[] {
   return [
     {
-      text: "Introduction",
+      text: "介绍",
       collapsed: false,
       items: [
-        { text: "简介", link: "/" },
+        { text: "什么是 releaseasy？", link: "what-is-releaseasy" },
         { text: "快速开始", link: "getting-started" },
       ],
     },

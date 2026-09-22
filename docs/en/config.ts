@@ -37,7 +37,7 @@ export default defineAdditionalConfig({
 
 function nav(): DefaultTheme.NavItem[] {
   return [
-    { text: "Guide", link: "/en/guide/", activeMatch: "/en/guide/" },
+    { text: "Guide", link: "/en/guide/what-is-releaseasy", activeMatch: "/en/guide/" },
     {
       text: "Reference",
       link: "/en/reference/cli",
@@ -52,7 +52,7 @@ function sidebarGuide(): DefaultTheme.SidebarItem[] {
       text: "Introduction",
       collapsed: false,
       items: [
-        { text: "Introduction", link: "/" },
+        { text: "What is releaseasy?", link: "what-is-releaseasy" },
         { text: "Getting Started", link: "getting-started" },
       ],
     },

@@ -11,7 +11,10 @@ hero:
   tagline: Make every release a pleasure
   actions:
     - theme: brand
-      text: Get Started
+      text: What is releaseasy?
+      link: /en/guide/what-is-releaseasy
+    - theme: alt
+      text: Quickstart
       link: /en/guide/getting-started
     - theme: alt
       text: GitHub

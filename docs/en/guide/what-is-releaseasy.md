@@ -1,4 +1,4 @@
-# Introduction
+# What is releaseasy?
 
 releaseasy is a lightweight release orchestration tool for npm packages. It completes version and Git tag management locally and pushes them to the remote repository, while the subsequent build and release process is automatically handled by CI/CD.
 
