@@ -24,5 +24,5 @@ export async function addScripts(context) {
   };
 
   // 写入pkg.json
-  writePackageJSON(packageJsonPath, packageJson);
+  await writePackageJSON(packageJsonPath, packageJson);
 }

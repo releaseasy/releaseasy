@@ -1,0 +1,2047 @@
+===== src\cli.js =====
+
+#!/usr/bin/env node
+
+import { Command } from "commander";
+import pkg from "../package.json" with { type: "json" };
+import { handleError } from "./handleError.js";
+import { resolveConfig } from "./config/index.js";
+import CONSTANTS from "./constants/index.js";
+
+const program = new Command();
+
+let currentCommand = program;
+
+program.hook("preAction", (_, actionCommand) => {
+  currentCommand = actionCommand;
+});
+
+program
+  .name(CONSTANTS.CLI_NAME)
+  .version(pkg.version, "-V, --version")
+  .helpOption("-h, --help")
+  .helpCommand(false);
+
+/**
+ * release
+ *
+ * releaseasy
+ * releaseasy release
+ */
+const releaseCommand = new Command("release")
+  .description("Release Package")
+  .option("-C, --cwd <path>", "Run the release process in the specified directory")
+  .option("-d, --dry-run", "Simulate release without applying changes.", false)
+  .option("-c, --config <path>", "Path to the config file")
+  .option(
+    "-v, --verbose",
+    "Increases the logging verbosity",
+    (_, previous) => {
+      return previous + 1;
+    },
+    CONSTANTS.LOG_LEVEL.NORMAL,
+  );
+
+releaseCommand.action(async (options) => {
+  const { release } = await import("./release.js");
+
+  const resolvedOptions = await resolveConfig(options);
+
+  await release(resolvedOptions);
+});
+
+program.addCommand(releaseCommand, {
+  isDefault: true,
+});
+
+/**
+ * init
+ *
+ * releaseasy init
+ */
+const initCommand = new Command("init")
+  .description("Initialize releaseasy configuration")
+  .option("-C, --cwd <path>", "Initialize configuration in the specified directory")
+  .option("-f, --force", "Overwrite existing configuration", false);
+
+initCommand.action(async (options) => {
+  const { init } = await import("./init.js");
+
+  await init(options);
+});
+
+program.addCommand(initCommand);
+
+/**
+ * changelog
+ *
+ * releaseasy changelog [git-cliff args...]
+ */
+const changelogCommand = new Command("changelog")
+  .description("Run git-cliff")
+  .helpOption(false)
+  .allowUnknownOption(true)
+  .allowExcessArguments(true);
+
+changelogCommand.action(async (_, command) => {
+  const { runGitCliff } = await import("./utils/index.js");
+
+  const result = await runGitCliff(command.args, {
+    throwOnError: false,
+  });
+
+  process.exit(result.exitCode ?? 0);
+});
+
+program.addCommand(changelogCommand);
+
+async function runCLI() {
+  try {
+    await program.parseAsync(process.argv);
+  } catch (err) {
+    handleError(err, {
+      command: currentCommand,
+    });
+  }
+}
+
+await runCLI();
+
+
+
+===== src\config\index.js =====
+
+import { resolve } from "node:path";
+import CONSTANTS from "../constants/index.js";
+import { defu } from "../utils/index.js";
+import { loadConfig } from "./load.js";
+import { validateConfig } from "./validate.js";
+
+export async function resolveConfig(inlineConfig) {
+  inlineConfig = normalizeInlineOptions(inlineConfig);
+
+  const { config, ...inlineOptions } = inlineConfig;
+  const fileConfig = await loadConfig(config, inlineOptions.cwd);
+  const resolvedConfig = defu(inlineOptions, fileConfig, CONSTANTS.DEFAULTS);
+
+  return validateConfig(resolvedConfig);
+}
+
+function normalizeInlineOptions(options) {
+  return {
+    ...options,
+    cwd: resolve(options.cwd ?? process.cwd()),
+  };
+}
+
+
+
+===== src\config\load.js =====
+
+import { lilconfig } from "lilconfig";
+import CONSTANTS from "../constants/index.js";
+
+export async function loadConfig(filepath, cwd) {
+  const explorer = lilconfig(CONSTANTS.CLI_NAME, {
+    loaders: {
+      ".mts": loadTS,
+      ".ts": loadTS,
+      ".cts": loadTS,
+    },
+    searchPlaces: [
+      `${CONSTANTS.CLI_NAME}.config.js`,
+      `${CONSTANTS.CLI_NAME}.config.mjs`,
+      `${CONSTANTS.CLI_NAME}.config.cjs`,
+      `${CONSTANTS.CLI_NAME}.config.ts`,
+      `${CONSTANTS.CLI_NAME}.config.mts`,
+      `${CONSTANTS.CLI_NAME}.config.cts`,
+      `${CONSTANTS.CLI_NAME}.config.json`,
+    ],
+  });
+
+  const result = filepath
+    ? await explorer.load(resolve(cwd, filepath))
+    : await explorer.search(cwd);
+
+  return result?.config ?? {};
+}
+
+async function loadTS(filepath) {
+  const { createJiti } = await import("jiti");
+
+  return createJiti(import.meta.url, {
+    interopDefault: true,
+  }).import(filepath, {
+    default: true,
+  });
+}
+
+
+
+===== src\config\validate.js =====
+
+import * as v from "valibot";
+
+const configSchema = v.object({
+  cwd: v.string(),
+
+  dryRun: v.boolean(),
+
+  verbose: v.number([v.integer(), v.minValue(0)]),
+  /**
+   * increments
+   *
+   * 允许：
+   * ["patch"]
+   * ["patch", "minor"]
+   * ["patch", "minor", "major"]
+   */
+  increments: v.array(
+    v.picklist([
+      "major",
+      "premajor",
+      "minor",
+      "preminor",
+      "patch",
+      "prepatch",
+      "prerelease",
+      "release",
+    ]),
+  ),
+
+  /**
+   * distTags
+   *
+   * 例如：
+   * ["latest", "next"]
+   */
+  distTags: v.optional(v.array(v.string())),
+
+  git: v.object({
+    /**
+     * git.requireBranch
+     *
+     * 支持：
+     * false
+     * "main"
+     * ["main", "develop"]
+     * /^(main|develop)$/
+     */
+    requireBranch: v.union([v.literal(false), v.string(), v.array(v.string()), v.instance(RegExp)]),
+    commitMessage: v.string(),
+    addArgs: v.array(v.string()),
+    commitArgs: v.array(v.string()),
+    tagName: v.string(),
+    changelog: v.union([
+      v.literal(false),
+      v.object({
+        output: v.string(),
+        configFile: v.string(),
+        args: v.string(),
+      }),
+    ]),
+  }),
+
+  // hooks
+  hooks: v.optional(
+    v.record(
+      v.picklist([
+        "before:init",
+        "before:changelog",
+        "after:changelog",
+        "before:bump",
+        "after:bump",
+        "after:release",
+      ]),
+      v.union([v.string(), v.array(v.string())]),
+    ),
+  ),
+});
+
+export function validateConfig(config) {
+  try {
+    return v.parse(configSchema, config, { abortEarly: true });
+  } catch (error) {
+    if (error instanceof v.ValiError) {
+      throw new Error(formatConfigError(error));
+    }
+    throw error;
+  }
+}
+
+function formatConfigError(error) {
+  const issues = flattenIssues(error);
+  const issue = mergeUnionIssues(issues);
+
+  const path = issue.path.join(".");
+
+  return [
+    "Invalid configuration",
+    "",
+    `  ${path}`,
+    "",
+    `  Expected: ${issue.expected}`,
+    `  Received: ${issue.received}`,
+  ].join("\n");
+}
+
+function flattenIssues(error, parentPath = []) {
+  const result = [];
+
+  for (const issue of error.issues) {
+    const currentPath = [...parentPath, ...(issue.path ?? []).map((item) => item.key)];
+
+    if (issue.issues) {
+      result.push(...flattenIssues(issue, currentPath));
+    } else {
+      result.push({
+        ...issue,
+        path: currentPath,
+      });
+    }
+  }
+  return result;
+}
+
+function mergeUnionIssues(issues) {
+  const issue = issues.at(-1);
+
+  const matched = issues.filter(
+    (item) => item.path.join(".") === issue.path.join(".") && item.received === issue.received,
+  );
+
+  if (matched.length === 1) {
+    return issue;
+  }
+
+  return {
+    ...issue,
+    expected: matched.map((item) => item.expected).join(" | "),
+  };
+}
+
+
+
+===== src\constants\index.js =====
+
+const CLI_NAME = "releaseasy";
+
+const VARIABLE_RE = /\$\{([^}]+)\}/g;
+
+const DEFAULTS = {
+  increments: ["patch", "minor", "major"],
+  distTags: ["latest", "next"],
+  git: {
+    requireBranch: "main",
+    commitMessage: "release: v${version}",
+    addArgs: ["."],
+    commitArgs: ["--no-verify", "-s"],
+    tagName: "v${version}",
+    changelog: {
+      output: "CHANGELOG.md",
+      configFile: "cliff.toml",
+      args: "--tag ${version}",
+    },
+  },
+};
+
+const LOG_LEVEL = {
+  NORMAL: 0,
+  VERBOSE: 1,
+  DEBUG: 2,
+};
+
+const CLIFF_FILE = "cliff.toml";
+
+const CONFIG_FORMAT_CHOICES = [
+  {
+    name: "JavaScript",
+    value: "javascript",
+  },
+  {
+    name: "TypeScript",
+    value: "typescript",
+  },
+  {
+    name: "JSON",
+    value: "json",
+  },
+  {
+    name: "package.json",
+    value: "packageJson",
+  },
+];
+
+const CHANGELOG_FORMAT_CHOICES = [
+  {
+    name: "Default",
+    value: "default",
+  },
+  {
+    name: "Keep a Changelog",
+    value: "keepachangelog",
+  },
+  {
+    name: "GitHub",
+    value: "github",
+  },
+  {
+    name: "GitHub Keep a Changelog",
+    value: "github-keepachangelog",
+  },
+  {
+    name: "GitLab",
+    value: "gitlab",
+  },
+  {
+    name: "GitLab Keep a Changelog",
+    value: "gitlab-keepachangelog",
+  },
+  {
+    name: "Detailed",
+    value: "detailed",
+  },
+  {
+    name: "Minimal",
+    value: "minimal",
+  },
+  {
+    name: "Scoped",
+    value: "scoped",
+  },
+  {
+    name: "Scope Sorted",
+    value: "scopesorted",
+  },
+  {
+    name: "Cocogitto",
+    value: "cocogitto",
+  },
+  {
+    name: "Unconventional",
+    value: "unconventional",
+  },
+];
+
+const CONFIG_ACTION = {
+  CREATED: "Created",
+  UPDATED: "Updated",
+};
+
+const DEFAULT_SCRIPTS = {
+  release: CLI_NAME,
+};
+
+export default {
+  CONFIG_ACTION,
+  DEFAULT_SCRIPTS,
+  DEFAULTS,
+  CLI_NAME,
+  VARIABLE_RE,
+  LOG_LEVEL,
+  CONFIG_FORMAT_CHOICES,
+  CHANGELOG_FORMAT_CHOICES,
+  CLIFF_FILE,
+};
+
+
+
+===== src\handleError.js =====
+
+import { logger } from "./utils/index.js";
+import CONSTANTS from "./constants/index.js";
+
+export function handleError(err, options = {}) {
+  if (!err) {
+    process.exit(0);
+  }
+  if (err instanceof CancelledError || err.name === "ExitPromptError") {
+    logger.warn(err.message);
+    process.exit(0);
+  } else if (err instanceof Error) {
+    const commandOptions = options.command?.opts();
+
+    const { verbose } = commandOptions;
+    if (verbose === undefined) {
+      logger.error(err);
+      return;
+    }
+
+    if (verbose > CONSTANTS.LOG_LEVEL.DEBUG) {
+      logger.error(err);
+      return;
+    }
+
+    logger.error(err.message);
+
+    process.exit(1);
+  }
+  logger.error("Unknown error", err);
+  process.exit(1);
+}
+
+/**
+ * 取消当前操作
+ *
+ * @param {string} [message]
+ * @throws {CancelledError}
+ */
+export function cancel(message) {
+  throw new CancelledError(message);
+}
+
+class CancelledError extends Error {
+  constructor(message = "Release cancelled by user") {
+    super(message);
+    this.name = "CancelledError";
+  }
+}
+
+
+
+===== src\index.d.ts =====
+
+import type { ReleaseType } from "semver";
+
+type DistTag = "latest" | "next" | "beta" | "alpha" | "canary" | "rc" | (string & {}); // 允许自定义
+
+type ChangelogOptions = {
+  output?: string;
+  configFile?: string;
+  args?: string;
+};
+
+type StepName = "changelog" | "bump";
+
+type StepHookEvent = `before:${StepName}` | `after:${StepName}`;
+
+type LifecycleHookEvent = "before:init" | "after:release";
+
+type HookEvent = StepHookEvent | LifecycleHookEvent;
+
+type Hooks = Partial<Record<HookEvent, string | string[]>>;
+
+export interface UserConfig {
+  increments?: ReleaseType[];
+  distTags?: DistTag[];
+  git?: {
+    requireBranch?: string | string[] | RegExp | false;
+    commitMessage?: string;
+    addArgs?: string[];
+    commitArgs?: string[];
+    tagName?: string;
+    changelog?: false | ChangelogOptions;
+  };
+  hooks?: Hooks;
+}
+
+export declare function defineConfig(config: UserConfig): UserConfig;
+
+
+
+===== src\index.js =====
+
+export const defineConfig = (config) => config;
+
+
+
+===== src\init.js =====
+
+import ansis from "ansis";
+
+import CONSTANTS from "./constants/index.js";
+import {
+  createContext,
+  promptInit,
+  install,
+  generateFiles,
+  addScripts,
+  dump,
+} from "./init/index.js";
+import { logger, blank } from "./utils/index.js";
+
+export async function init(inlineOps = {}) {
+  const options = {
+    cwd: inlineOps.cwd ?? process.cwd(),
+    force: inlineOps.force ?? false,
+  };
+  blank();
+  logger.log(`${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}`);
+  blank();
+  // 获取基本的上下文
+  const context = await createContext(options);
+
+  // 交互式配置
+  await promptInit(context);
+
+  // 下载jiti
+  if (context.configFormat === "typescript") {
+    await install(context);
+  }
+
+  // 生成配置文件
+  await generateFiles(options, context);
+
+  // 添加脚本到package.json
+  await addScripts(context);
+
+  // 打印日志
+  await dump(context);
+}
+
+
+
+===== src\init\createContext.js =====
+
+import path from "node:path";
+import { detect } from "package-manager-detector/detect";
+import {
+  exists,
+  assertDirectory,
+  resolvePackageJSON,
+  readPackageJSON,
+  isPackageInstalled,
+  detectPackageManager,
+} from "../utils/index.js";
+
+export async function createContext(options) {
+  const { cwd } = options;
+  const resolvedCwd = await assertDirectory(cwd);
+
+  const packageJsonPath = await resolvePackageJSON(resolvedCwd);
+
+  const packageManager = await detectPackageManager(resolvedCwd);
+
+  const packageJson = await readPackageJSON(packageJsonPath);
+
+  return {
+    cwd: resolvedCwd,
+    packageManager,
+    packageJsonPath,
+    isTypeScriptProject: await isTypeScriptProject(resolvedCwd),
+    moduleFormat: packageJson.type === "module" ? "esm" : "commonjs",
+  };
+}
+
+async function isTypeScriptProject(cwd) {
+  return (await exists(path.join(cwd, "tsconfig.json"))) || isPackageInstalled(cwd, "typescript");
+}
+
+
+
+===== src\init\dump.js =====
+
+import ansis from "ansis";
+import { hasScripts, logger, formatCommand } from "../utils/index.js";
+import CONSTANTS from "../constants/index.js";
+import { resolveCommand } from "package-manager-detector/commands";
+
+export async function dump(context) {
+  const { configFile, cliffFile, packageManager, packageJsonPath, changelogFormat, configAction } =
+    context;
+
+  logger.success(`${configAction} ${ansis.yellow(configFile)}`);
+  logger.success(`Created ${ansis.yellow(cliffFile)} ${ansis.gray(`(${changelogFormat})`)}`);
+
+  let command;
+  if (await hasScripts(packageJsonPath, CONSTANTS.DEFAULT_SCRIPTS)) {
+    command = resolveCommand(packageManager.agent, "run", ["release"]);
+  } else {
+    command = resolveCommand(packageManager.agent, "execute-local", [CONSTANTS.CLI_NAME]);
+  }
+
+  logger.log(`
+  You're ready to release!
+  Run:
+    ${ansis.cyan(formatCommand(command))}
+  `);
+}
+
+
+
+===== src\init\generate.js =====
+
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { exists, runGitCliff, updatePackageJSON } from "../utils/index.js";
+import CONSTANTS from "../constants/index.js";
+import ansis from "ansis";
+import packageJson from "../../package.json" with { type: "json" };
+import jsonConfig from "../init/templates/releaseasy.config.json" with { type: "json" };
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const TEMPLATE_DIR = path.join(__dirname, "templates");
+
+export async function generateFiles(options, context) {
+  const { changelogFormat, cwd, configFormat, packageJsonPath } = context;
+  const { force } = options;
+
+  let configFile, configAction;
+  if (configFormat === "packageJson") {
+    configFile = "package.json";
+    configAction = CONSTANTS.CONFIG_ACTION.UPDATED;
+    await generatePackageJsonConfig(packageJsonPath, force);
+  } else {
+    configAction = CONSTANTS.CONFIG_ACTION.CREATED;
+    const configExtension = resolveConfigExtension(context);
+
+    configFile = `${CONSTANTS.CLI_NAME}.config.${configExtension}`;
+    const configTemplate = path.join(TEMPLATE_DIR, configFile);
+
+    if (!(await exists(configTemplate))) {
+      throw new Error(`Template not found: ${configTemplate}`);
+    }
+
+    const configTarget = path.join(cwd, configFile);
+    const cliffTarget = path.join(cwd, CONSTANTS.CLIFF_FILE);
+
+    await assertCanWrite(configTarget, force);
+    await assertCanWrite(cliffTarget, force);
+
+    await writeConfigFile(configTemplate, configTarget, context);
+  }
+
+  // 调用命令生成git-cliff的配置文件
+  try {
+    const args = ["--init"];
+    if (changelogFormat !== "default") {
+      args.push(changelogFormat);
+    }
+
+    await runGitCliff(args, {
+      nodeOptions: {
+        stdio: "pipe",
+      },
+    });
+  } catch (error) {
+    throw new Error(`Failed to generate ${CONSTANTS.CLIFF_FILE}.`, { cause: error });
+  }
+
+  // 保存到上下文
+  Object.assign(context, {
+    configFile,
+    configAction,
+    cliffFile: CONSTANTS.CLIFF_FILE,
+  });
+}
+
+async function generatePackageJsonConfig(packageJsonPath, force) {
+  await updatePackageJSON(packageJsonPath, (packageJson) => {
+    if (packageJson[CONSTANTS.CLI_NAME] && !force) {
+      throw new Error(
+        `Field ${ansis.yellow(CONSTANTS.CLI_NAME)} already exists in package.json. ` +
+          `Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
+      );
+    }
+
+    packageJson[[CONSTANTS.CLI_NAME]] = jsonConfig;
+  });
+}
+
+async function assertCanWrite(file, force) {
+  if (!force && (await exists(file))) {
+    throw new Error(
+      `File already exists: ${ansis.yellow(path.basename(file))}. Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
+    );
+  }
+}
+
+function resolveConfigExtension(context) {
+  const { configFormat, moduleFormat } = context;
+
+  if (configFormat === "json") {
+    return "json";
+  }
+
+  if (configFormat === "javascript") {
+    return moduleFormat === "esm" ? "mjs" : "cjs";
+  }
+
+  if (configFormat === "typescript") {
+    return moduleFormat === "esm" ? "mts" : "cts";
+  }
+
+  throw new Error(`Unsupported config format: ${configFormat}`);
+}
+
+async function writeConfigFile(template, target) {
+  if (path.extname(template) === ".json") {
+    return writeJsonConfig(template, target);
+  }
+
+  await fs.copyFile(template, target);
+}
+
+async function writeJsonConfig(template, target) {
+  const content = await fs.readFile(template, "utf8");
+  const config = JSON.parse(content);
+
+  const output = {
+    $schema: `https://cdn.jsdelivr.net/npm/releaseasy@${packageJson.version}/schema/releaseasy.json`,
+    ...config,
+  };
+
+  await fs.writeFile(target, JSON.stringify(output, null, 2) + "\n", "utf8");
+}
+
+
+
+===== src\init\index.js =====
+
+export * from "./createContext.js";
+export * from "./generate.js";
+export * from "./install.js";
+export * from "./package.js";
+export * from "./prompt.js";
+export * from "./dump.js";
+
+
+
+===== src\init\install.js =====
+
+import { x } from "tinyexec";
+import { confirm } from "@inquirer/prompts";
+import { resolveCommand } from "package-manager-detector/commands";
+import { isPackageInstalled } from "../utils/index.js";
+
+export async function install(context) {
+  const { cwd, packageManager } = context;
+  // 已经安装，直接返回
+  if (isPackageInstalled(cwd, "jiti")) {
+    return;
+  }
+
+  const shouldInstall = await confirm({
+    message: "TypeScript configuration requires jiti, but it is not installed. Install it now?",
+    default: true,
+  });
+
+  // 用户拒绝安装
+  if (!shouldInstall) {
+    return;
+  }
+
+  const { command, args } = resolveCommand(packageManager.agent, "add", ["-D", "jiti"]);
+
+  await x(command, args, {
+    throwOnError: true,
+    nodeOptions: {
+      cwd,
+      stdio: "inherit",
+    },
+  });
+}
+
+
+
+===== src\init\package.js =====
+
+import fs from "node:fs/promises";
+import path from "node:path";
+import CONSTANTS from "../constants/index.js";
+import { hasScripts, readPackageJSON, writePackageJSON } from "../utils/index.js";
+
+export async function addScripts(context) {
+  const { packageJsonPath, addScripts } = context;
+
+  // 如果拒绝就直接返回
+  if (!addScripts) return;
+
+  const packageJson = await readPackageJSON(packageJsonPath);
+  const scripts = packageJson.scripts ?? {};
+
+  const conflicts = Object.keys(CONSTANTS.DEFAULT_SCRIPTS).filter((name) => name in scripts);
+
+  if (conflicts.length > 0) {
+    return;
+  }
+
+  packageJson.scripts = {
+    ...scripts,
+    ...CONSTANTS.DEFAULT_SCRIPTS,
+  };
+
+  // 写入pkg.json
+  writePackageJSON(packageJsonPath, packageJson);
+}
+
+
+
+===== src\init\prompt.js =====
+
+import { select, confirm } from "@inquirer/prompts";
+import CONSTANTS from "../constants/index.js";
+
+export async function promptInit(context) {
+  const configFormat = await select({
+    message: "Which config format would you like?",
+    default: context.isTypeScriptProject ? "typescript" : "javascript",
+    choices: CONSTANTS.CONFIG_FORMAT_CHOICES,
+  });
+
+  const changelogFormat = await select({
+    message: "Which changelog format?",
+    default: "default",
+    choices: CONSTANTS.CHANGELOG_FORMAT_CHOICES,
+  });
+
+  const addScripts = await confirm({
+    message: "Add releaseasy npm scripts to package.json?",
+    default: true,
+  });
+
+  Object.assign(context, {
+    configFormat,
+    changelogFormat,
+    addScripts,
+  });
+}
+
+
+
+===== src\init\templates\releaseasy.config.cjs =====
+
+/** @type { import('releaseasy').UserConfig } */
+module.exports = {
+  increments: ["patch", "minor", "major"],
+  distTags: ["latest", "next"],
+  git: {
+    changelog: {
+      output: "CHANGELOG.md",
+      configFile: "cliff.toml",
+      args: "--tag ${version}",
+    },
+  },
+};
+
+
+
+===== src\init\templates\releaseasy.config.cts =====
+
+import type { UserConfig } from "releaseasy";
+
+module.exports = {
+  increments: ["patch", "minor", "major"],
+  distTags: ["latest", "next"],
+  git: {
+    changelog: {
+      output: "CHANGELOG.md",
+      configFile: "cliff.toml",
+      args: "--tag ${version}",
+    },
+  },
+} satisfies UserConfig;
+
+
+
+===== src\init\templates\releaseasy.config.json =====
+
+{
+  "increments": ["patch", "minor", "major"],
+  "distTags": ["latest", "next"],
+  "git": {
+    "changelog": {
+      "output": "CHANGELOG.md",
+      "configFile": "cliff.toml",
+      "args": "--tag ${version}"
+    }
+  }
+}
+
+
+
+===== src\init\templates\releaseasy.config.mjs =====
+
+/** @type { import('releaseasy').UserConfig } */
+export default {
+  increments: ["patch", "minor", "major"],
+  distTags: ["latest", "next"],
+  git: {
+    changelog: {
+      output: "CHANGELOG.md",
+      configFile: "cliff.toml",
+      args: "--tag ${version}",
+    },
+  },
+};
+
+
+
+===== src\init\templates\releaseasy.config.mts =====
+
+import type { UserConfig } from "releaseasy";
+
+export default {
+  increments: ["patch", "minor", "major"],
+  distTags: ["latest", "next"],
+  git: {
+    changelog: {
+      output: "CHANGELOG.md",
+      configFile: "cliff.toml",
+      args: "--tag ${version}",
+    },
+  },
+} satisfies UserConfig;
+
+
+
+===== src\release.js =====
+
+import {
+  createContext,
+  selectVersion,
+  selectTag,
+  genChangelog,
+  confirmChangelog,
+  bump,
+  summary,
+  git,
+} from "./release/index.js";
+import {
+  formatDuration,
+  getCurrentCommitSha,
+  rollback,
+  logger,
+  runSideEffect,
+  runHook,
+} from "./utils/index.js";
+import ansis from "ansis";
+
+export async function release(options) {
+  const start = performance.now();
+
+  const context = await createContext(options);
+
+  try {
+    await runHook(options, "before:init", context);
+    await selectVersion(options, context);
+    await selectTag(options, context);
+
+    if (options.git.changelog !== false) {
+      await runSideEffect(options, "Generate changelog", async () => {
+        await genChangelog(options, context);
+        await confirmChangelog(options, context);
+      });
+    }
+
+    await runSideEffect(options, `Bump version to ${context.version}`, async () => {
+      await bump(options, context);
+    });
+
+    await summary(options, context);
+
+    await runSideEffect(options, `Git operations`, async () => await git(options, context));
+
+    await runHook(options, "after:release", context);
+
+    const cost = formatDuration(performance.now() - start);
+    logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
+  } catch (err) {
+    await rollback(options, context);
+    throw err;
+  }
+}
+
+
+
+===== src\release\bump.js =====
+
+import { readPackageJSON, writePackageJSON, runHook } from "../utils/index.js";
+
+export async function bump(options, context) {
+  const { version, distTag, packageJsonPath } = context;
+
+  await runHook(options, "before:bump", context);
+
+  const pkg = await readPackageJSON(packageJsonPath);
+
+  // 写入版本号
+  pkg.version = version;
+
+  // 写入tag
+  pkg.publishConfig = {
+    ...pkg.publishConfig,
+    tag: distTag,
+  };
+
+  await writePackageJSON(packageJsonPath, pkg);
+
+  await runHook(options, "after:bump", context);
+}
+
+
+
+===== src\release\confirmChangelog.js =====
+
+import { confirm } from "@inquirer/prompts";
+import { cancel } from "../handleError.js";
+
+export async function confirmChangelog(options, context) {
+  const normal = await confirm({
+    message: "Changelog generated. Does it look good?",
+    default: true,
+  });
+
+  if (!normal) cancel();
+}
+
+
+
+===== src\release\createContext.js =====
+
+import {
+  isGitAvailable,
+  isGitRepository,
+  isWorkingTreeClean,
+  getRemoteUrl,
+  assertDirectory,
+  resolvePackageJSON,
+  getCurrentCommitSha,
+  getCurrentBranch,
+  readPackageJSON,
+  detectPackageManager,
+  exists,
+  formatCommand,
+} from "../utils/index.js";
+import { valid } from "semver";
+import path from "node:path";
+import ansis from "ansis";
+import CONSTANTS from "../constants/index.js";
+import { resolveCommand } from "package-manager-detector/commands";
+
+export async function createContext(options) {
+  const { cwd, git } = options;
+
+  // 判断目录
+  const resolvedCwd = await assertDirectory(cwd);
+  const packageJsonPath = await resolvePackageJSON(cwd);
+  const packageManager = await detectPackageManager(resolvedCwd);
+
+  if (!(await isGitAvailable(options))) {
+    throw new Error(
+      "Git is not installed or not available in your PATH. Please install Git to continue.",
+    );
+  }
+
+  if (!(await isGitRepository(options))) {
+    throw new Error("Current working directory is not a git repository.");
+  }
+
+  if (!(await isWorkingTreeClean(options))) {
+    throw new Error("Working directory is not clean. Please commit your changes.");
+  }
+
+  const remoteUrl = await getRemoteUrl(options);
+
+  if (!remoteUrl) {
+    throw new Error(
+      "No Git remote repository found (e.g. 'origin'). Please add a remote using 'git remote add origin <url>'.",
+    );
+  }
+
+  const { name, version } = await readPackageJSON(packageJsonPath);
+
+  if (!name || name.trim() === "") {
+    throw new Error(`package.json "name" must be a non-empty string.`);
+  }
+
+  if (!version || !valid(version)) {
+    throw new Error(`package.json "version" must be a valid semver version.`);
+  }
+
+  let initialCommitSha;
+  try {
+    initialCommitSha = await getCurrentCommitSha(options);
+  } catch (error) {
+    throw new Error("Failed to determine current Git commit.");
+  }
+
+  let branchName;
+  try {
+    branchName = await getCurrentBranch(options);
+  } catch {
+    throw new Error("Failed to determine current Git branch.");
+  }
+
+  if (!matchBranch(git.requireBranch, branchName)) {
+    throw new Error(
+      `Release is only allowed on ${String(git.requireBranch)}, current: ${branchName}`,
+    );
+  }
+
+  let resolvedCliffFile;
+  // 提前抛出配置缺少的错误,用户体验更好
+  if (git.changelog !== false) {
+    // 判断配置文件是否存在
+    resolvedCliffFile = path.join(resolvedCwd, git.changelog.configFile);
+
+    const initCommand = resolveCommand(packageManager.agent, "execute-local", [
+      CONSTANTS.CLI_NAME,
+      "init",
+    ]);
+
+    const changelogCommand = resolveCommand(packageManager.agent, "execute-local", [
+      CONSTANTS.CLI_NAME,
+      "changelog",
+      "--init",
+      "[template]",
+    ]);
+
+    if (!(await exists(resolvedCliffFile))) {
+      throw Error(
+        `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +
+          `Run "${ansis.cyan(formatCommand(initCommand))}" to initialize the configuration.\n` +
+          `or "${ansis.cyan(formatCommand(changelogCommand))}" to initialize the Git-cliff configuration.`,
+      );
+    }
+  }
+
+  return {
+    resolvedCwd,
+    resolvedCliffFile,
+    name,
+    latestVersion: version,
+    remoteUrl,
+    packageJsonPath,
+    tagCreated: false,
+    initialCommitSha,
+    branchName,
+  };
+}
+
+function matchBranch(requireBranch, inputBranch) {
+  if (requireBranch === false) return true;
+
+  if (typeof requireBranch === "string") {
+    return requireBranch === inputBranch;
+  }
+
+  if (Array.isArray(requireBranch)) {
+    return requireBranch.includes(inputBranch);
+  }
+
+  if (requireBranch instanceof RegExp) {
+    return requireBranch.test(inputBranch);
+  }
+
+  return false;
+}
+
+
+
+===== src\release\genChangelog.js =====
+
+import { Spinner } from "picospinner";
+import { logCommand, runGitCliff, runHook } from "../utils/index.js";
+import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
+
+export async function genChangelog(options, context) {
+  // 前置钩子
+  await runHook(options, "before:changelog", context);
+
+  const args = await buildGitCliffArgs(options, context);
+
+  await withSpinner(options, "Generating changelog, please wait…", async () => {
+    try {
+      logCommand(options, "git-cliff", args);
+      await runGitCliff(args, {
+        nodeOptions: {
+          cwd: options.cwd,
+          stdio: isVerbose(options) ? "inherit" : "pipe",
+        },
+      });
+    } catch (error) {
+      throw new Error("Failed to generate changelog", {
+        cause: error,
+      });
+    }
+  });
+
+  await runHook(options, "after:changelog", context);
+}
+
+async function buildGitCliffArgs(options, context) {
+  const { args: argTemplate, output } = options.git.changelog;
+
+  const args = parseArgsStringToArgv(interpolate(argTemplate, context));
+
+  args.push("--config", context.resolvedCliffFile);
+  args.push("--output", output);
+  args.push(...getVerboseArgs(options));
+
+  // 把ouput直接给到上下文方便复用
+  Object.assign(context, {
+    changelog: {
+      output,
+    },
+  });
+
+  return args;
+}
+
+function getVerboseArgs(options) {
+  if (!isVerbose(options)) {
+    return [];
+  }
+
+  return [`-${"v".repeat(options.verbose)}`];
+}
+
+
+
+===== src\release\git.js =====
+
+import { add, commit, tag, push, withSpinner, runSideEffect } from "../utils/index.js";
+
+export async function git(options, context) {
+  await withSpinner(options, "Releasing…", async () => {
+    try {
+      await add(options);
+      await commit(options, context);
+      await tag(options, context);
+      await push(options, context);
+    } catch (error) {
+      throw new Error("Release failed", {
+        cause: error,
+      });
+    }
+  });
+}
+
+
+
+===== src\release\index.js =====
+
+export * from "./createContext.js";
+export * from "./selectVersion.js";
+export * from "./selectTag.js";
+export * from "./genChangelog.js";
+export * from "./confirmChangelog.js";
+export * from "./bump.js";
+export * from "./summary.js";
+export * from "./git.js";
+
+
+
+===== src\release\selectTag.js =====
+
+import { select } from "@inquirer/prompts";
+import { prerelease } from "semver";
+
+export async function selectTag(options, context) {
+  const isPrerelease = Boolean(prerelease(context.version));
+
+  const enabled = [];
+  const disabled = [];
+
+  for (const tag of options.distTags) {
+    const item = {
+      name: tag,
+      value: tag,
+      disabled: isPrerelease && tag === "latest",
+    };
+    (item.disabled ? disabled : enabled).push(item);
+  }
+
+  const choices = [...enabled, ...disabled];
+
+  const distTag = await select({
+    message: "Select npm dist-tag",
+    choices: choices,
+  });
+
+  Object.assign(context, {
+    distTag,
+  });
+}
+
+
+
+===== src\release\selectVersion.js =====
+
+import { input, select } from "@inquirer/prompts";
+import { gt, inc, prerelease, valid } from "semver";
+import { interpolate } from "../utils/index.js";
+
+export async function selectVersion(options, context) {
+  const { git, increments } = options;
+  const { latestVersion } = context;
+  let targetVersion;
+  const isPrerelease = prerelease(latestVersion);
+
+  // 构建版本选项
+  const choices = increments.map((type) => ({
+    name: `${type} (${inc(latestVersion, type)})`,
+    value: inc(latestVersion, type),
+  }));
+
+  // 如果当前是预发布版本，插入 prerelease 选项
+  if (isPrerelease) {
+    choices.unshift({
+      name: `prerelease (${inc(latestVersion, "prerelease")})`,
+      value: inc(latestVersion, "prerelease"),
+    });
+  }
+
+  // custom 始终放最后
+  choices.push({
+    name: "custom",
+    value: "custom",
+  });
+
+  const release = await select({
+    message: "Select release type",
+    choices,
+  });
+
+  targetVersion = release;
+
+  // 自定义版本号
+  if (release === "custom") {
+    targetVersion = await input({
+      message: "Input custom version",
+      default: latestVersion,
+      validate(value) {
+        const v = value.trim();
+
+        if (!valid(v)) {
+          return "Invalid semver version";
+        }
+
+        if (!gt(v, latestVersion)) {
+          return `Version must be greater than current version: ${latestVersion}`;
+        }
+
+        return true;
+      },
+    });
+  }
+
+  // 赋值给上下文
+  context.version = targetVersion;
+
+  Object.assign(context, {
+    tagName: interpolate(git.tagName, context),
+    commitMessage: interpolate(git.commitMessage, context),
+  });
+}
+
+
+
+===== src\release\summary.js =====
+
+import ansis from "ansis";
+import { logger, blank, getWorkingTreeChanges } from "../utils/index.js";
+import { confirm } from "@inquirer/prompts";
+import { cancel } from "../handleError.js";
+
+export async function summary(options, context) {
+  const { version, distTag, branchName, tagName } = context;
+  const data = {
+    Version: version,
+    "Npm Dist Tag": distTag,
+    Branch: branchName,
+    "Git Tag": tagName,
+  };
+
+  await renderSection("Summary:", () => {
+    renderKeyValue(data);
+  });
+
+  await renderSection("Changeset:", async () => {
+    await getWorkingTreeChanges(options);
+  });
+
+  blank();
+
+  const ok = await confirm({
+    message: `Releasing ${ansis.yellow(`v${version}`)} on ${ansis.yellow(distTag)}. Confirm?`,
+    default: false,
+  });
+
+  if (!ok) cancel();
+}
+
+function renderSection(title, fn) {
+  blank();
+  logger.log(ansis.cyan(title));
+  return fn();
+}
+
+function renderKeyValue(data) {
+  const maxKeyLength = Math.max(...Object.keys(data).map((k) => k.length));
+
+  for (const [key, val] of Object.entries(data)) {
+    logger.log(ansis.green(key.padEnd(maxKeyLength + 2)), ansis.yellow(val));
+  }
+}
+
+
+
+===== src\utils\fs.js =====
+
+import fs from "node:fs/promises";
+import path from "node:path";
+
+export async function exists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function isDirectory(filePath) {
+  try {
+    const stat = await fs.stat(filePath);
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+export async function assertDirectory(directory) {
+  const resolvedPath = path.resolve(directory);
+
+  if (!(await isDirectory(resolvedPath))) {
+    throw new Error(`Directory does not exist: ${resolvedPath}`);
+  }
+
+  return resolvedPath;
+}
+
+export async function isFile(filePath) {
+  try {
+    const stat = await fs.stat(filePath);
+    return stat.isFile();
+  } catch {
+    return false;
+  }
+}
+
+export async function outputFile(filePath, data, options) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, data, options);
+}
+
+
+
+===== src\utils\git-cliff.js =====
+
+import { arch as getArch, platform as getPlatform } from "os";
+import { defu } from "./helpers.js";
+import { x } from "tinyexec";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
+export async function runGitCliff(args, execOptions = {}) {
+  const bin = getExePath();
+
+  return await x(
+    bin,
+    args,
+    defu(execOptions, {
+      throwOnError: true,
+      nodeOptions: {
+        stdio: "inherit",
+      },
+    }),
+  );
+}
+
+function getExePath() {
+  const platform = getPlatform();
+  const arch = getArch();
+
+  let os = platform;
+  let extension = "";
+
+  if (platform === "win32" || platform === "cygwin") {
+    os = "windows";
+    extension = ".exe";
+  }
+
+  try {
+    return require.resolve(`git-cliff-${os}-${arch}/bin/git-cliff${extension}`);
+  } catch (e) {
+    throw new Error(`Couldn't find git-cliff binary inside node_modules for ${os}-${arch}`, {
+      cause: e,
+    });
+  }
+}
+
+
+
+===== src\utils\git.js =====
+
+import { x } from "tinyexec";
+import { defu, execCommand } from "../utils/helpers.js";
+
+function git(options, args, execOptions = {}) {
+  return x(
+    "git",
+    args,
+    defu(execOptions, {
+      throwOnError: true,
+      nodeOptions: {
+        cwd: options.cwd,
+        stdio: "pipe",
+      },
+    }),
+  );
+}
+
+export async function isGitAvailable(options) {
+  try {
+    await git(options, ["--version"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function isGitRepository(options) {
+  try {
+    const { stdout } = await git(options, ["rev-parse", "--is-inside-work-tree"]);
+
+    return stdout.trim() === "true";
+  } catch {
+    return false;
+  }
+}
+
+export async function getWorkingTreeChanges(options) {
+  return await git(options, ["status", "--porcelain"], {
+    nodeOptions: {
+      stdio: "inherit",
+    },
+  });
+}
+
+export async function isWorkingTreeClean(options) {
+  const { stdout } = await git(options, ["status", "--porcelain"]);
+
+  return stdout.trim().length === 0;
+}
+
+export async function getRemoteUrl(options) {
+  try {
+    const { stdout } = await git(options, ["remote", "get-url", "origin"]);
+
+    return stdout.trim();
+  } catch {
+    return "";
+  }
+}
+
+export async function getCurrentBranch(options) {
+  const { stdout } = await git(options, ["symbolic-ref", "--short", "HEAD"]);
+  return stdout.trim();
+}
+
+export async function getCurrentCommitSha(options) {
+  const { stdout } = await git(options, ["rev-parse", "HEAD"]);
+
+  return stdout.trim();
+}
+
+async function deleteTag(options, context) {
+  const { tagCreated, tagName } = context;
+
+  if (!tagCreated) {
+    return;
+  }
+  await git(options, ["tag", "-d", tagName]);
+}
+
+async function reset(options, context) {
+  const { initialCommitSha } = context;
+  if (!initialCommitSha) {
+    return;
+  }
+
+  await git(options, ["reset", "--hard", initialCommitSha]);
+
+  // 删除 release 过程中产生的 untracked files / directories
+  await git(options, ["clean", "-fd"]);
+}
+
+export async function rollback(options, context) {
+  await deleteTag(options, context);
+  await reset(options, context);
+}
+
+export async function add(options) {
+  await execCommand("git", ["add", ...options.git.addArgs], options);
+}
+
+export async function commit(options, context) {
+  await execCommand(
+    "git",
+    ["commit", ...options.git.commitArgs, "-m", context.commitMessage],
+    options,
+  );
+}
+
+export async function tag(options, context) {
+  await execCommand("git", ["tag", "-f", context.tagName], options);
+
+  context.tagCreated = true;
+}
+
+export async function push(options, context) {
+  await execCommand("git", ["push", "origin", "HEAD", `refs/tags/${context.tagName}`], options);
+}
+
+
+
+===== src\utils\helpers.js =====
+
+import { createConsola } from "consola";
+import path from "node:path";
+import { createDefu } from "defu";
+import { createRequire } from "node:module";
+import CONSTANTS from "../constants/index.js";
+import ansis from "ansis";
+import { readPackageJSON } from "./pkg.js";
+import { interpolate } from "./interpolate.js";
+import { createSpinner } from "./spinner.js";
+import { x } from "tinyexec";
+import { detect } from "package-manager-detector";
+
+export const logger = createConsola();
+
+export const loggerWithTag = logger.withDefaults({
+  tag: CONSTANTS.CLI_NAME,
+});
+
+export async function runSideEffect(options, description, action) {
+  if (options.dryRun) {
+    loggerWithTag.info(ansis.yellow(`[dry-run] would ${description}`));
+    return;
+  }
+
+  return await action();
+}
+
+export async function detectPackageManager(cwd) {
+  const packageManager = await detect({ cwd });
+
+  if (!packageManager) {
+    throw new Error("Could not detect the package manager used by this project.");
+  }
+
+  return packageManager;
+}
+
+export function formatCommand(command) {
+  return [command.command, ...command.args].join(" ");
+}
+
+export async function hasScripts(packageJsonPath, additions) {
+  const packageJson = await readPackageJSON(packageJsonPath);
+  const scripts = packageJson.scripts ?? {};
+
+  return Object.entries(additions).every(
+    ([name, expectedValue]) => scripts[name] === expectedValue,
+  );
+}
+
+export const defu = createDefu((obj, key, value) => {
+  if (Array.isArray(obj[key]) && Array.isArray(value)) {
+    obj[key] = value; // 直接覆盖
+    return true;
+  }
+});
+
+export function formatDuration(ms) {
+  if (ms < 1000) return `${ms.toFixed(0)}ms`;
+
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(2)}s`;
+
+  const m = Math.floor(s / 60);
+  const rest = (s % 60).toFixed(1);
+  return `${m}m ${rest}s`;
+}
+
+export function blank(lines = 1) {
+  process.stdout.write("\n".repeat(lines));
+}
+
+export function isVerbose(options) {
+  return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
+}
+
+export function isPackageInstalled(cwd, packageName) {
+  try {
+    const require = createRequire(path.join(cwd, `__${CONSTANTS.CLI_NAME}_resolver__.js`));
+
+    require.resolve(packageName);
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function runHook(options, hookName, context) {
+  if (!context) return;
+
+  const { cwd, verbose, hooks } = options;
+  const hook = hooks?.[hookName];
+
+  if (!hook) return;
+
+  const hooksList = Array.isArray(hook) ? hook : [hook];
+
+  for (const hookItem of hooksList) {
+    const cmd = interpolate(hookItem, context);
+
+    const spinner = createSpinner(cmd, options);
+
+    spinner.start();
+
+    try {
+      await execCommand(cmd, [], options, { nodeOptions: { shell: true } });
+      spinner.succeed(cmd);
+    } catch (error) {
+      spinner.fail(cmd);
+      throw error;
+    }
+  }
+}
+
+export async function execCommand(command, args, options, execOptions = {}) {
+  logCommand(options, command, args);
+
+  return await x(
+    command,
+    args,
+    defu(execOptions, {
+      throwOnError: true,
+      nodeOptions: {
+        cwd: options.cwd,
+        stdio: options.verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
+      },
+    }),
+  );
+}
+
+export function logCommand(options, displayCommand, args) {
+  if (isVerbose(options)) {
+    loggerWithTag.log(ansis.yellow(`$ ${displayCommand} ${formatArgs(args)}`));
+  }
+}
+
+function formatArgs(args = []) {
+  return args
+    .map((arg) => {
+      const value = String(arg);
+
+      if (/^[\w./:@%+=,-]+$/.test(value)) {
+        return value;
+      }
+
+      return JSON.stringify(value);
+    })
+    .join(" ");
+}
+
+
+
+===== src\utils\index.js =====
+
+export * from "./helpers.js";
+export * from "./fs.js";
+export * from "./pkg.js";
+export * from "./git.js";
+export * from "./interpolate.js";
+export * from "./string-argv.js";
+export * from "./git-cliff.js";
+export * from "./spinner.js";
+
+
+
+===== src\utils\interpolate.js =====
+
+import CONSTANTS from "../constants/index.js";
+
+function getValue(context, path) {
+  return path
+    .trim()
+    .split(".")
+    .reduce((value, key) => value?.[key], context);
+}
+
+export function interpolate(template, context) {
+  if (typeof template !== "string") {
+    return template;
+  }
+
+  return template.replace(CONSTANTS.VARIABLE_RE, (match, path) => {
+    const value = getValue(context, path);
+
+    if (value === undefined) {
+      throw new Error(`Unknown template variable: ${path.trim()}`);
+    }
+
+    return String(value);
+  });
+}
+
+
+
+===== src\utils\pkg.js =====
+
+import fs from "node:fs/promises";
+import path from "node:path";
+import { isFile } from "./fs.js";
+
+export async function resolvePackageJSON(cwd) {
+  const packageJsonPath = path.join(cwd, "package.json");
+
+  if (!(await isFile(packageJsonPath))) {
+    throw new Error(`No package.json found in ${cwd}`);
+  }
+  return packageJsonPath;
+}
+
+export async function readPackageJSON(packageJsonPath) {
+  const content = await fs.readFile(packageJsonPath, "utf8");
+
+  return JSON.parse(content);
+}
+
+export async function writePackageJSON(packageJsonPath, packageJson) {
+  await fs.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
+}
+
+export async function updatePackageJSON(packageJsonPath, callback) {
+  const packageJson = await readPackageJSON(packageJsonPath);
+
+  await callback(packageJson);
+
+  await writePackageJSON(packageJsonPath, packageJson);
+
+  return packageJson;
+}
+
+
+
+===== src\utils\spinner.js =====
+
+import { Spinner } from "picospinner";
+import { isVerbose } from "./helpers.js";
+
+function noop() {}
+
+export function createSpinner(text, options) {
+  if (isVerbose(options)) {
+    return {
+      start: noop,
+      stop: noop,
+      succeed: noop,
+      fail: noop,
+    };
+  }
+
+  return new Spinner(text, {
+    stream: process.stderr,
+    colors: {
+      spinner: "green",
+      text: "gray",
+    },
+  });
+}
+
+export async function withSpinner(options, text, fn) {
+  const spinner = createSpinner(text, options);
+
+  spinner.start();
+
+  try {
+    return await fn();
+  } finally {
+    spinner.stop();
+  }
+}
+
+
+
+===== src\utils\string-argv.js =====
+
+export function parseArgsStringToArgv(input) {
+  const args = [];
+
+  let current = "";
+  let quote = null;
+  let escaped = false;
+  let hasToken = false;
+
+  const push = () => {
+    if (!hasToken) {
+      return;
+    }
+
+    args.push(current);
+    current = "";
+    hasToken = false;
+  };
+
+  for (const char of input.trim()) {
+    if (escaped) {
+      current += char;
+      hasToken = true;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      hasToken = true;
+      continue;
+    }
+
+    if (quote !== null) {
+      if (char === quote) {
+        quote = null;
+      } else {
+        current += char;
+      }
+
+      hasToken = true;
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      hasToken = true;
+      continue;
+    }
+
+    if (/\s/.test(char)) {
+      push();
+      continue;
+    }
+
+    current += char;
+    hasToken = true;
+  }
+
+  if (escaped) {
+    current += "\\";
+  }
+
+  if (quote !== null) {
+    throw new Error(`Unclosed quote: ${quote}`);
+  }
+
+  push();
+
+  return args;
+}
