@@ -21,12 +21,16 @@ hero:
       link: https://github.com/releaseasy/releaseasy
 
 features:
-  - title: Semantic Versioning
+  - icon: 🏷️
+    title: Semantic Versioning
     details: Smart version calculation and recommendations
-  - title: Changelog
+  - icon: 📝
+    title: Changelog
     details: Automatically generate CHANGELOG.md
-  - title: Hooks
+  - icon: 🪝
+    title: Hooks
     details: Flexible hooks for every release
-  - title: Automatic Rollback
+  - icon: ↩️
+    title: Automatic Rollback
     details: Roll back changes automatically if a release fails
 ---
