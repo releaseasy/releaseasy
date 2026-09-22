@@ -2,23 +2,23 @@ import { defineAdditionalConfig, type DefaultTheme, type MarkdownLocaleOptions }
 
 export const markdown: MarkdownLocaleOptions = {
   container: {
-    tipLabel: "d",
-    infoLabel: "a",
-    warningLabel: "警dsa告",
-    dangerLabel: "dsa",
-    detailsLabel: "详细d信息",
-    noteLabel: "dsa",
-    importantLabel: "qq",
-    cautionLabel: "ee",
+    tipLabel: "TIP",
+    infoLabel: "INFO",
+    warningLabel: "WARNING",
+    dangerLabel: "DANGER",
+    detailsLabel: "Details",
+    noteLabel: "NOTE",
+    importantLabel: "IMPORTANT",
+    cautionLabel: "CAUTION",
   },
   codeCopyButton: {
-    tooltipText: "aaa",
-    copiedText: "ddd",
+    tooltipText: "Copy code",
+    copiedText: "Copied",
   },
 };
 
 export default defineAdditionalConfig({
-  description: "dddddddd",
+  description: "Simplify Your Releases",
 
   themeConfig: {
     nav: nav(),
@@ -30,8 +30,43 @@ export default defineAdditionalConfig({
 
     editLink: {
       pattern: "https://github.com/releaseasy/releaseasy/edit/main/docs/:path",
-      text: "在 GitHub 上编辑此页面daaa",
+      text: "Edit this page on GitHub",
     },
+    footer: {
+      message: "Released under the MIT License.",
+      copyright: "Copyright © 2026-present ajiho",
+    },
+    docFooter: {
+      prev: "Previous page",
+      next: "Next page",
+    },
+    outline: {
+      level: "deep",
+      label: "On this page",
+    },
+    lastUpdated: {
+      text: "Last Updated",
+      formatOptions: {
+        dateStyle: "medium",
+        timeStyle: "medium",
+        forceLocale: true,
+      },
+    },
+    notFound: {
+      title: "PAGE NOT FOUND",
+      quote:
+        "But if you don't change your direction, and if you keep looking, you may end up where you are heading.",
+      linkLabel: "go to home",
+      linkText: "Take me home",
+    },
+
+    langMenuLabel: "Change language",
+    returnToTopLabel: "Return to top",
+    sidebarMenuLabel: "Menu",
+    darkModeSwitchLabel: "Appearance",
+    lightModeSwitchTitle: "Switch to light theme",
+    darkModeSwitchTitle: "Switch to dark theme",
+    skipToContentLabel: "Skip to content",
   },
 });
 

@@ -10,7 +10,7 @@ export default defineConfig({
   rewrites: {
     "zh/:rest*": ":rest*",
   },
-  ignoreDeadLinks: true,
+  ignoreDeadLinks: false,
   head: [
     ["link", { rel: "icon", href: "favicon.svg", type: "image/svg+xml" }],
     [
