@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+
 import { x } from "tinyexec";
 
 export async function createGitFixture() {
@@ -56,15 +57,8 @@ export async function createGitFixture() {
 
 async function git(cwd, args) {
   try {
-    console.log("GIT_DIR:", process.env.GIT_DIR);
-    console.log("GIT_WORK_TREE:", process.env.GIT_WORK_TREE);
     return await x("git", args, {
       cwd,
-      env: {
-        ...process.env,
-        GIT_DIR: undefined,
-        GIT_WORK_TREE: undefined,
-      },
       throwOnError: true,
     });
   } catch (error) {

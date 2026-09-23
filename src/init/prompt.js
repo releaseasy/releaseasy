@@ -1,4 +1,5 @@
 import { select, confirm } from "@inquirer/prompts";
+
 import CONSTANTS from "../constants/index.js";
 
 export async function promptInit(context) {

@@ -1,11 +1,13 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { exists, runGitCliff, updatePackageJSON } from "../utils/index.js";
-import CONSTANTS from "../constants/index.js";
+
 import ansis from "ansis";
+
 import packageJson from "../../package.json" with { type: "json" };
+import CONSTANTS from "../constants/index.js";
 import jsonConfig from "../init/templates/releaseasy.config.json" with { type: "json" };
+import { exists, runGitCliff, updatePackageJSON } from "../utils/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

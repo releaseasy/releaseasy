@@ -1,4 +1,4 @@
-import { add, commit, tag, push, withSpinner, runSideEffect } from "../utils/index.js";
+import { add, commit, tag, push, withSpinner } from "../utils/index.js";
 
 export async function git(options, context) {
   await withSpinner(options, "Releasing…", async () => {

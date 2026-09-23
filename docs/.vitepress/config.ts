@@ -1,5 +1,6 @@
 import { defineConfig, type DefaultTheme } from "vitepress";
 import { groupIconMdPlugin, groupIconVitePlugin } from "vitepress-plugin-group-icons";
+
 import { markdown as enMarkdown } from "../en/config.ts";
 
 // https://vitepress.dev/reference/site-config

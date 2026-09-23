@@ -1,14 +1,16 @@
-import { createConsola } from "consola";
-import path from "node:path";
-import { createDefu } from "defu";
 import { createRequire } from "node:module";
-import CONSTANTS from "../constants/index.js";
+import path from "node:path";
+
 import ansis from "ansis";
-import { readPackageJSON } from "./pkg.js";
-import { interpolate } from "./interpolate.js";
-import { createSpinner } from "./spinner.js";
-import { x } from "tinyexec";
+import { createConsola } from "consola";
+import { createDefu } from "defu";
 import { detect } from "package-manager-detector";
+import { x } from "tinyexec";
+
+import CONSTANTS from "../constants/index.js";
+import { interpolate } from "./interpolate.js";
+import { readPackageJSON } from "./pkg.js";
+import { createSpinner } from "./spinner.js";
 
 export const logger = createConsola();
 
@@ -89,7 +91,7 @@ export function isPackageInstalled(cwd, packageName) {
 export async function runHook(options, hookName, context) {
   if (!context) return;
 
-  const { cwd, verbose, hooks } = options;
+  const { hooks } = options;
   const hook = hooks?.[hookName];
 
   if (!hook) return;

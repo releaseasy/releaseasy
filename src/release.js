@@ -1,3 +1,5 @@
+import ansis from "ansis";
+
 import {
   createContext,
   selectVersion,
@@ -8,15 +10,7 @@ import {
   summary,
   git,
 } from "./release/index.js";
-import {
-  formatDuration,
-  getCurrentCommitSha,
-  rollback,
-  logger,
-  runSideEffect,
-  runHook,
-} from "./utils/index.js";
-import ansis from "ansis";
+import { formatDuration, rollback, logger, runSideEffect, runHook } from "./utils/index.js";
 
 export async function release(options) {
   const start = performance.now();
@@ -31,7 +25,7 @@ export async function release(options) {
     if (options.git.changelog !== false) {
       await runSideEffect(options, "Generate changelog", async () => {
         await genChangelog(options, context);
-        await confirmChangelog(options, context);
+        await confirmChangelog();
       });
     }
 

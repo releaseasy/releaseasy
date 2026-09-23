@@ -1,7 +1,5 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import CONSTANTS from "../constants/index.js";
-import { hasScripts, readPackageJSON, writePackageJSON } from "../utils/index.js";
+import { readPackageJSON, writePackageJSON } from "../utils/index.js";
 
 export async function addScripts(context) {
   const { packageJsonPath, addScripts } = context;

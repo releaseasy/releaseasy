@@ -1,7 +1,8 @@
 import ansis from "ansis";
-import { hasScripts, logger, formatCommand } from "../utils/index.js";
-import CONSTANTS from "../constants/index.js";
 import { resolveCommand } from "package-manager-detector/commands";
+
+import CONSTANTS from "../constants/index.js";
+import { hasScripts, logger, formatCommand } from "../utils/index.js";
 
 export async function dump(context) {
   const { configFile, cliffFile, packageManager, packageJsonPath, changelogFormat, configAction } =

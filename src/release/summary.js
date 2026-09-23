@@ -1,7 +1,8 @@
-import ansis from "ansis";
-import { logger, blank, getWorkingTreeChanges } from "../utils/index.js";
 import { confirm } from "@inquirer/prompts";
+import ansis from "ansis";
+
 import { cancel } from "../handleError.js";
+import { logger, blank, getWorkingTreeChanges } from "../utils/index.js";
 
 export async function summary(options, context) {
   const { version, distTag, branchName, tagName } = context;

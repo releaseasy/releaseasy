@@ -6,7 +6,16 @@
     "correctness": "error"
   },
   "rules": {
-    "no-unused-vars": "off",
+    "no-unused-vars": [
+      "error",
+      {
+        "fix": {
+          "imports": "fix",
+          "variables": "off"
+        },
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
     "unicorn/no-empty-file": "off"
   },
   "env": {

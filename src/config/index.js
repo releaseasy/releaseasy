@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+
 import CONSTANTS from "../constants/index.js";
 import { defu } from "../utils/index.js";
 import { loadConfig } from "./load.js";

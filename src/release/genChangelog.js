@@ -1,4 +1,3 @@
-import { Spinner } from "picospinner";
 import { logCommand, runGitCliff, runHook } from "../utils/index.js";
 import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
 

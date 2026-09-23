@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+
 import { isFile } from "./fs.js";
 
 export async function resolvePackageJSON(cwd) {

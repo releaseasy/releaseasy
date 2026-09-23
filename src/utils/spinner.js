@@ -1,4 +1,5 @@
 import { Spinner } from "picospinner";
+
 import { isVerbose } from "./helpers.js";
 
 function noop() {}

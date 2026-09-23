@@ -1,9 +1,9 @@
 import "virtual:group-icons.css";
 import type { Theme } from "vitepress";
-import { h, nextTick, watch } from "vue";
 import { useData } from "vitepress";
-import DefaultTheme from "vitepress/theme";
 import { createMermaidRenderer } from "vitepress-mermaid-renderer";
+import DefaultTheme from "vitepress/theme";
+import { h, nextTick, watch } from "vue";
 
 export default {
   extends: DefaultTheme,

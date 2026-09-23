@@ -1,4 +1,5 @@
 import { lilconfig } from "lilconfig";
+
 import CONSTANTS from "../constants/index.js";
 
 export async function loadConfig(filepath, cwd) {

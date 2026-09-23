@@ -1,5 +1,5 @@
 import path from "node:path";
-import { detect } from "package-manager-detector/detect";
+
 import {
   exists,
   assertDirectory,

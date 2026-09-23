@@ -1,6 +1,7 @@
 import { defineConfig } from "rolldown";
-import pkg from "./package.json" with { type: "json" };
 import { copyFiles } from "rolldown-plugin-copy-files";
+
+import pkg from "./package.json" with { type: "json" };
 
 const externalDeps = new Set([
   ...Object.keys(pkg.dependencies ?? {}),

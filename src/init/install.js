@@ -1,6 +1,7 @@
-import { x } from "tinyexec";
 import { confirm } from "@inquirer/prompts";
 import { resolveCommand } from "package-manager-detector/commands";
+import { x } from "tinyexec";
+
 import { isPackageInstalled } from "../utils/index.js";
 
 export async function install(context) {

@@ -1,9 +1,10 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { mkdtemp } from "node:fs/promises";
-import { x } from "tinyexec";
+
 import fs from "fs-extra";
+import { x } from "tinyexec";
+import { describe, it, beforeEach, afterEach } from "vitest";
 
 describe("hello", () => {
   let dir;

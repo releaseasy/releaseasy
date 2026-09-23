@@ -1,3 +1,10 @@
+import path from "node:path";
+
+import ansis from "ansis";
+import { resolveCommand } from "package-manager-detector/commands";
+import { valid } from "semver";
+
+import CONSTANTS from "../constants/index.js";
 import {
   isGitAvailable,
   isGitRepository,
@@ -12,11 +19,6 @@ import {
   exists,
   formatCommand,
 } from "../utils/index.js";
-import { valid } from "semver";
-import path from "node:path";
-import ansis from "ansis";
-import CONSTANTS from "../constants/index.js";
-import { resolveCommand } from "package-manager-detector/commands";
 
 export async function createContext(options) {
   const { cwd, git } = options;
@@ -61,7 +63,7 @@ export async function createContext(options) {
   let initialCommitSha;
   try {
     initialCommitSha = await getCurrentCommitSha(options);
-  } catch (error) {
+  } catch (_error) {
     throw new Error("Failed to determine current Git commit.");
   }
 

@@ -1,7 +1,9 @@
-import { arch as getArch, platform as getPlatform } from "os";
-import { defu } from "./helpers.js";
-import { x } from "tinyexec";
 import { createRequire } from "node:module";
+import { arch as getArch, platform as getPlatform } from "os";
+
+import { x } from "tinyexec";
+
+import { defu } from "./helpers.js";
 
 const require = createRequire(import.meta.url);
 
