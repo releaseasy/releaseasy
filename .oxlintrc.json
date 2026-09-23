@@ -3,7 +3,8 @@
   "ignorePatterns": ["dist/**", "coverage/**", "vendor/**", "test/snapshots/**"],
   "plugins": ["typescript", "unicorn", "oxc"],
   "categories": {
-    "correctness": "error"
+    "correctness": "error",
+    "suspicious": "warn"
   },
   "rules": {
     "no-unused-vars": [
