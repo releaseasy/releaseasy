@@ -171,7 +171,7 @@ releaseasy
 Here, `releaseasy changelog` is responsible for generating the Release content, and `softprops/action-gh-release` is responsible for creating the GitHub Release.
 
 > [!NOTE]
-> For detailed usage of the `releaseasy changelog` command, please refer to [CLI command: changelog].
+> For detailed usage of the `releaseasy changelog` command, see the [CLI command changelog](../reference/cli#releaseasy-changelog) reference.
 
 ## FAQ
 

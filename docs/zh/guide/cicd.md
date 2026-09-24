@@ -170,8 +170,10 @@ releaseasy
 
 其中 `releaseasy changelog` 负责生成 Release 内容，`softprops/action-gh-release` 负责创建 GitHub Release。
 
+<!-- /reference/cli.html#releaseasy-changelog -->
+
 > [!NOTE]
-> `releaseasy changelog` 命令的详细用法请参考 [CLI 命令：changelog]。
+> `releaseasy changelog` 命令的详细用法请参见 [CLI命令changelog](../reference/cli#releaseasy-changelog)参考。
 
 ## 常见问题
 
