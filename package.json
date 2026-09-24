@@ -65,7 +65,7 @@
     "test:ui": "pnpm run test --ui",
     "coverage": "vitest run --coverage",
     "publint": "publint",
-    "check": "run-s lint build publint",
+    "check": "run-s lint coverage build publint",
     "release": "node ./src/cli.js"
   },
   "dependencies": {
