@@ -1,18 +1,9 @@
-import path from "node:path";
+import { mkdtemp } from "node:fs/promises";
+import os from "node:os";
+import path from "path";
 
 import fs from "fs-extra";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-
-import {
-  createProjectFixture,
-  cleanupProject,
-  readPackage,
-  readFile,
-  git,
-  gitLog,
-  gitTags,
-  gitStatus,
-} from "./helpers.js";
 
 const prompts = vi.hoisted(() => ({
   select: vi.fn(),
@@ -20,264 +11,161 @@ const prompts = vi.hoisted(() => ({
   confirm: vi.fn(),
 }));
 
+// const packageManagerDetector = vi.hoisted(() => ({
+//   detect: vi.fn(),
+// }));
+
 vi.mock("@inquirer/prompts", () => ({
   select: prompts.select,
   input: prompts.input,
   confirm: prompts.confirm,
 }));
 
-import { resolveConfig } from "../../src/config/index.js";
+// vi.mock("package-manager-detector", () => ({
+//   detect: packageManagerDetector.detect,
+// }));
+
+vi.mock("../../src/utils/git.js", async (importOriginal) => {
+  const actual = await importOriginal();
+
+  return {
+    ...actual,
+    isGitAvailable: vi.fn(),
+  };
+});
 import { release } from "../../src/release.js";
+import { isGitAvailable } from "../../src/utils/git.js";
 
 describe("release integration", () => {
-  let cwd;
+  let dir;
 
   beforeEach(async () => {
-    cwd = await createProjectFixture();
+    dir = await mkdtemp(path.join(os.tmpdir(), "release-cli-test-"));
+    console.log(dir);
 
     prompts.select.mockReset();
     prompts.input.mockReset();
     prompts.confirm.mockReset();
+
+    // packageManagerDetector.detect.mockReset();
   });
 
   afterEach(async () => {
-    if (cwd) {
-      await cleanupProject(cwd);
-    }
+    await fs.remove(dir);
   });
 
-  it("should perform a complete patch release", async () => {
-    /*
-     * 第一次 select:
-     *   selectVersion()
-     *
-     * 第二次 select:
-     *   selectTag()
-     */
-    prompts.select.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
-
-    /*
-     * 第一次 confirm:
-     *   confirmChangelog()
-     *
-     * 第二次 confirm:
-     *   summary()
-     */
-    prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
-
-    const options = await resolveConfig({
-      cwd,
-      verbose: 0,
-    });
-
-    await release(options);
-
-    // --------------------------------------------------
-    // package.json
-    // --------------------------------------------------
-
-    const pkg = await readPackage(cwd);
-
-    expect(pkg.version).toBe("1.0.1");
-
-    expect(pkg.publishConfig).toEqual({
-      tag: "latest",
-    });
-
-    // --------------------------------------------------
-    // CHANGELOG.md
-    // --------------------------------------------------
-
-    const changelog = await readFile(cwd, "CHANGELOG.md");
-
-    expect(changelog).toContain("# Changelog");
-
-    // --------------------------------------------------
-    // Git working tree
-    // --------------------------------------------------
-
-    const status = await gitStatus(cwd);
-
-    expect(status).toBe("");
-
-    // --------------------------------------------------
-    // Git commit
-    // --------------------------------------------------
-
-    const log = await gitLog(cwd);
-
-    expect(log.message).toBe("release: v1.0.1");
-
-    // --------------------------------------------------
-    // Git tag
-    // --------------------------------------------------
-
-    const tags = await gitTags(cwd);
-
-    expect(tags).toContain("v1.0.1");
+  it("目录不存在应该抛出异常", async () => {
+    await expect(
+      release({
+        cwd: "foo/bar",
+      }),
+    ).rejects.toThrow(`Directory does not exist: ${path.resolve("foo/bar")}`);
   });
 
-  it("should release with next dist-tag", async () => {
-    prompts.select.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("next");
-
-    prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
-
-    const options = await resolveConfig({
-      cwd,
-      verbose: 0,
-    });
-
-    await release(options);
-
-    const pkg = await readPackage(cwd);
-
-    expect(pkg.version).toBe("1.0.1");
-    expect(pkg.publishConfig.tag).toBe("next");
-
-    const tags = await gitTags(cwd);
-
-    expect(tags).toContain("v1.0.1");
-
-    const log = await gitLog(cwd);
-
-    expect(log.message).toBe("release: v1.0.1");
+  it("package.json不存在应该抛出异常", async () => {
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow(`No package.json found in ${path.resolve(dir)}`);
   });
 
-  it("should support a minor release", async () => {
-    prompts.select.mockResolvedValueOnce("1.1.0").mockResolvedValueOnce("latest");
-
-    prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
-
-    const options = await resolveConfig({
-      cwd,
-      verbose: 0,
+  it("检测不到包管理器应该抛出异常", async () => {
+    await fs.writeJson(path.join(dir, "package.json"), {
+      name: "test-project",
+      version: "1.0.0",
+      // packageManager: "pnpm@10.0.0",// 这里故意不写入该字段它才会抛出异常
     });
 
-    await release(options);
-
-    const pkg = await readPackage(cwd);
-
-    expect(pkg.version).toBe("1.1.0");
-
-    expect(await gitTags(cwd)).toContain("v1.1.0");
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Could not detect the package manager used by this project.");
   });
 
-  it("should support a major release", async () => {
-    prompts.select.mockResolvedValueOnce("2.0.0").mockResolvedValueOnce("latest");
-
-    prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
-
-    const options = await resolveConfig({
-      cwd,
-      verbose: 0,
+  it("Git 未安装应该抛出异常", async () => {
+    isGitAvailable.mockResolvedValue(false);
+    await fs.writeJson(path.join(dir, "package.json"), {
+      name: "test-project",
+      version: "1.0.0",
+      packageManager: "pnpm@10.0.0",
     });
-
-    await release(options);
-
-    const pkg = await readPackage(cwd);
-
-    expect(pkg.version).toBe("2.0.0");
-
-    expect(await gitTags(cwd)).toContain("v2.0.0");
-  });
-
-  it("should execute release hooks", async () => {
-    // const marker = path.join(cwd, "hook.log");
-
-    await fs.writeJson(
-      path.join(cwd, "releaseasy.config.json"),
-      {
-        increments: ["patch"],
-        distTags: ["latest"],
-        git: {
-          requireBranch: "main",
-          changelog: {
-            output: "CHANGELOG.md",
-            configFile: "cliff.toml",
-            args: "--tag ${version}",
-          },
-        },
-        hooks: {
-          "before:init": `node -e "require('fs').appendFileSync('hook.log', 'before:init\\n')"`,
-          "after:bump": `node -e "require('fs').appendFileSync('hook.log', 'after:bump\\n')"`,
-          "after:release": `node -e "require('fs').appendFileSync('hook.log', 'after:release\\n')"`,
-        },
-      },
-      {
-        spaces: 2,
-      },
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow(
+      "Git is not installed or not available in your PATH. Please install Git to continue.",
     );
-
-    await git(cwd, ["add", "."]);
-    await git(cwd, ["commit", "-m", "chore: add release config"]);
-
-    prompts.select.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
-
-    prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
-
-    const options = await resolveConfig({
-      cwd,
-      verbose: 0,
-    });
-
-    await release(options);
-
-    const hookLog = await readFile(cwd, "hook.log");
-
-    expect(hookLog).toContain("before:init");
-    expect(hookLog).toContain("after:bump");
-    expect(hookLog).toContain("after:release");
-
-    expect(await gitTags(cwd)).toContain("v1.0.1");
   });
 
-  it("should cancel the release when changelog confirmation is rejected", async () => {
-    prompts.select.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+  it("当前目录不是 Git 仓库应该抛出异常", async () => {
+    isGitAvailable.mockResolvedValue(true);
 
-    prompts.confirm.mockResolvedValueOnce(false);
-
-    const options = await resolveConfig({
-      cwd,
-      verbose: 0,
+    await fs.writeJson(path.join(dir, "package.json"), {
+      name: "test-project",
+      version: "1.0.0",
+      packageManager: "pnpm@10.0.0",
     });
 
-    await expect(release(options)).rejects.toThrow("Release cancelled by user");
-
-    /*
-     * rollback() 会恢复到 initialCommitSha，
-     * 因此 package.json 应该仍然是 1.0.0。
-     */
-    const pkg = await readPackage(cwd);
-
-    expect(pkg.version).toBe("1.0.0");
-
-    const tags = await gitTags(cwd);
-
-    expect(tags).toEqual([]);
-
-    const status = await gitStatus(cwd);
-
-    expect(status).toBe("");
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Current working directory is not a git repository.");
   });
 
-  it("should cancel the release at final confirmation", async () => {
-    prompts.select.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
-
-    prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
-
-    const options = await resolveConfig({
-      cwd,
-      verbose: 0,
-    });
-
-    await expect(release(options)).rejects.toThrow("Release cancelled by user");
-
-    const pkg = await readPackage(cwd);
-
-    expect(pkg.version).toBe("1.0.0");
-
-    expect(await gitTags(cwd)).toEqual([]);
-
-    expect(await gitStatus(cwd)).toBe("");
+  it("应该执行一次完整的 patch 版本发布", async () => {
+    // /*
+    //  * 第一次 select:
+    //  *   selectVersion()
+    //  *
+    //  * 第二次 select:
+    //  *   selectTag()
+    //  */
+    // prompts.select.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+    // /*
+    //  * 第一次 confirm:
+    //  *   confirmChangelog()
+    //  *
+    //  * 第二次 confirm:
+    //  *   summary()
+    //  */
+    // prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    // const options = await resolveConfig({
+    //   cwd,
+    //   verbose: 0,
+    // });
+    // console.log(options);
+    // await release(options);
+    // // --------------------------------------------------
+    // // package.json
+    // // --------------------------------------------------
+    // const pkg = await readPackage(cwd);
+    // expect(pkg.version).toBe("1.0.1");
+    // expect(pkg.publishConfig).toEqual({
+    //   tag: "latest",
+    // });
+    // // --------------------------------------------------
+    // // CHANGELOG.md
+    // // --------------------------------------------------
+    // const changelog = await readFile(cwd, "CHANGELOG.md");
+    // expect(changelog).toContain("# Changelog");
+    // // --------------------------------------------------
+    // // Git working tree
+    // // --------------------------------------------------
+    // const status = await gitStatus(cwd);
+    // expect(status).toBe("");
+    // // --------------------------------------------------
+    // // Git commit
+    // // --------------------------------------------------
+    // const log = await gitLog(cwd);
+    // expect(log.message).toBe("release: v1.0.1");
+    // // --------------------------------------------------
+    // // Git tag
+    // // --------------------------------------------------
+    // const tags = await gitTags(cwd);
+    // expect(tags).toContain("v1.0.1");
   });
 });

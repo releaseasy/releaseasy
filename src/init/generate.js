@@ -67,15 +67,14 @@ export async function generateFiles(options, context) {
 }
 
 async function generatePackageJsonConfig(packageJsonPath, force) {
-  await updatePackageJSON(packageJsonPath, (packageJson) => {
-    if (packageJson[CONSTANTS.CLI_NAME] && !force) {
+  await updatePackageJSON(packageJsonPath, (pkg) => {
+    if (pkg[CONSTANTS.CLI_NAME] && !force) {
       throw new Error(
         `Field ${ansis.yellow(CONSTANTS.CLI_NAME)} already exists in package.json. ` +
           `Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
       );
     }
-
-    packageJson[[CONSTANTS.CLI_NAME]] = jsonConfig;
+    pkg[[CONSTANTS.CLI_NAME]] = jsonConfig;
   });
 }
 

@@ -81,7 +81,9 @@ export function validateConfig(config) {
     return v.parse(configSchema, config, { abortEarly: true });
   } catch (error) {
     if (error instanceof v.ValiError) {
-      throw new Error(formatConfigError(error));
+      throw new Error(formatConfigError(error), {
+        cause: error,
+      });
     }
     throw error;
   }

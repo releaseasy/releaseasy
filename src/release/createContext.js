@@ -64,7 +64,9 @@ export async function createContext(options) {
   try {
     initialCommitSha = await getCurrentCommitSha(options);
   } catch (_error) {
-    throw new Error("Failed to determine current Git commit.");
+    throw new Error("Failed to determine current Git commit.", {
+      cause: _error,
+    });
   }
 
   let branchName;

@@ -15,7 +15,7 @@ export async function promptInit(context) {
     choices: CONSTANTS.CHANGELOG_FORMAT_CHOICES,
   });
 
-  const addScripts = await confirm({
+  const shouldAddScripts = await confirm({
     message: "Add releaseasy npm scripts to package.json?",
     default: true,
   });
@@ -23,6 +23,6 @@ export async function promptInit(context) {
   Object.assign(context, {
     configFormat,
     changelogFormat,
-    addScripts,
+    shouldAddScripts,
   });
 }

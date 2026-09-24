@@ -27,8 +27,8 @@ export async function runSideEffect(options, description, action) {
   return await action();
 }
 
-export async function detectPackageManager(cwd) {
-  const packageManager = await detect({ cwd });
+export async function detectPackageManager(dir) {
+  const packageManager = await detect({ cwd: dir });
 
   if (!packageManager) {
     throw new Error("Could not detect the package manager used by this project.");
