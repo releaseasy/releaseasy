@@ -3,9 +3,10 @@ import { resolve } from "node:path";
 import CONSTANTS from "../constants/index.js";
 import { defu } from "../utils/index.js";
 import { loadConfig } from "./load.js";
+import type { InlineConfig, ResolvedOptions } from "./types.ts";
 import { validateConfig } from "./validate.js";
 
-export async function resolveConfig(inlineConfig) {
+export async function resolveConfig(inlineConfig: InlineConfig): Promise<ResolvedOptions> {
   inlineConfig = normalizeInlineOptions(inlineConfig);
 
   const { config, ...inlineOptions } = inlineConfig;
@@ -15,7 +16,7 @@ export async function resolveConfig(inlineConfig) {
   return validateConfig(resolvedConfig);
 }
 
-function normalizeInlineOptions(options) {
+function normalizeInlineOptions(options: InlineConfig) {
   return {
     ...options,
     cwd: resolve(options.cwd ?? process.cwd()),

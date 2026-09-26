@@ -1,5 +1,6 @@
 import ansis from "ansis";
 
+import type { ResolvedOptions } from "./config/types.ts";
 import {
   createContext,
   selectVersion,
@@ -12,7 +13,7 @@ import {
 } from "./release/index.js";
 import { formatDuration, rollback, logger, runSideEffect, runHook } from "./utils/index.js";
 
-export async function release(options) {
+export async function release(options: ResolvedOptions) {
   const start = performance.now();
 
   const context = await createContext(options);

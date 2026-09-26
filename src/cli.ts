@@ -3,7 +3,8 @@
 import { Command } from "commander";
 
 import pkg from "../package.json" with { type: "json" };
-import { resolveConfig } from "./config/index.js";
+import { resolveConfig } from "./config/index.ts";
+import { type InlineConfig } from "./config/types.ts";
 import CONSTANTS from "./constants/index.ts";
 import { handleError } from "./handleError.js";
 
@@ -41,7 +42,7 @@ const releaseCommand = new Command("release")
     CONSTANTS.LOG_LEVEL.NORMAL,
   );
 
-releaseCommand.action(async (options) => {
+releaseCommand.action(async (options: InlineConfig) => {
   const { release } = await import("./release.ts");
 
   const resolvedOptions = await resolveConfig(options);
