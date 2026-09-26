@@ -83,6 +83,7 @@
   "devDependencies": {
     "@size-limit/file": "^13.1.1",
     "@types/node": "^26.6.2",
+    "@types/semver": "^7.8.0",
     "@vitest/coverage-v8": "^4.1.11",
     "@vitest/ui": "^4.1.11",
     "cross-env": "^10.1.0",

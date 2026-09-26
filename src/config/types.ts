@@ -32,4 +32,9 @@ export interface UserConfig {
   hooks?: Hooks;
 }
 
-export declare function defineConfig(config: UserConfig): UserConfig;
+export interface InlineConfig extends UserConfig {
+  cwd?: string;
+  config?: string;
+  dryRun?: boolean;
+  verbose?: boolean[];
+}
