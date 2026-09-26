@@ -18,6 +18,7 @@ type HookEvent = StepHookEvent | LifecycleHookEvent;
 
 type Hooks = Partial<Record<HookEvent, string | string[]>>;
 
+// 公开的用户的api
 export interface UserConfig {
   increments?: ReleaseType[];
   distTags?: DistTag[];
@@ -37,6 +38,25 @@ export interface InlineConfig extends UserConfig {
   config?: string;
   dryRun?: boolean;
   verbose?: boolean[];
+}
+
+// 内部用的选项
+export interface ResolvedOptions {
+  increments: ReleaseType[];
+  distTags: DistTag[];
+  git: {
+    requireBranch: string | string[] | RegExp | false;
+    commitMessage: string;
+    addArgs: string[];
+    commitArgs: string[];
+    tagName: string;
+    changelog: false | ChangelogOptions;
+  };
+  hooks?: Hooks;
+  cwd: string;
+  config: string;
+  dryRun: boolean;
+  verbose: boolean[];
 }
 
 // release 流程 运行时的上下文数据

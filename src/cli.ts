@@ -4,7 +4,7 @@ import { Command } from "commander";
 
 import pkg from "../package.json" with { type: "json" };
 import { resolveConfig } from "./config/index.js";
-import CONSTANTS from "./constants/index.js";
+import CONSTANTS from "./constants/index.ts";
 import { handleError } from "./handleError.js";
 
 const program = new Command();
@@ -42,7 +42,7 @@ const releaseCommand = new Command("release")
   );
 
 releaseCommand.action(async (options) => {
-  const { release } = await import("./release.js");
+  const { release } = await import("./release.ts");
 
   const resolvedOptions = await resolveConfig(options);
 
