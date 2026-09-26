@@ -10,7 +10,7 @@ import {
   bump,
   summary,
   git,
-} from "./release/index.js";
+} from "./release/index.ts";
 import { formatDuration, rollback, logger, runSideEffect, runHook } from "./utils/index.js";
 
 export async function release(options: ResolvedOptions) {

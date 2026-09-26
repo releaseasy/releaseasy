@@ -6,7 +6,7 @@ import pkg from "../package.json" with { type: "json" };
 import { resolveConfig } from "./config/index.ts";
 import { type InlineConfig } from "./config/types.ts";
 import CONSTANTS from "./constants/index.ts";
-import { handleError } from "./handleError.js";
+import { handleError } from "./handleError.ts";
 
 const program = new Command();
 
@@ -100,7 +100,7 @@ async function runCLI() {
     await program.parseAsync(process.argv);
   } catch (err) {
     handleError(err, {
-      command: currentCommand,
+      verbose: currentCommand.opts().verbose,
     });
   }
 }

@@ -58,6 +58,7 @@
     "tsdown": "tsdown",
     "build": "run-s clean tsdown size",
     "dev": "pnpm run tsdown --watch",
+    "typecheck": "tsc --noEmit",
     "docs:build": "vitepress build docs",
     "docs:dev": "vitepress dev docs",
     "docs:preview": "vitepress preview docs",
