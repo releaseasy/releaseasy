@@ -38,3 +38,16 @@ export interface InlineConfig extends UserConfig {
   dryRun?: boolean;
   verbose?: boolean[];
 }
+
+// release 流程 运行时的上下文数据
+export interface ReleaseContext {
+  name: string;
+  resolvedCwd: string;
+  resolvedCliffFile: string;
+  latestVersion: string;
+  remoteUrl: string;
+  packageJsonPath: string;
+  tagCreated: boolean;
+  initialCommitSha: string;
+  branchName: string;
+}

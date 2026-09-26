@@ -110,9 +110,9 @@ export async function createContext(options) {
   }
 
   return {
+    name,
     resolvedCwd,
     resolvedCliffFile,
-    name,
     latestVersion: version,
     remoteUrl,
     packageJsonPath,
