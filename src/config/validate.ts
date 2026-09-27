@@ -1,5 +1,11 @@
 import * as v from "valibot";
 
+/** 单个路径片段：属性键，剔除了 symbol */
+type PathKey = Extract<PropertyKey, string | number>;
+
+/** 完整路径 */
+type Path = PathKey[];
+
 const configSchema = v.object({
   cwd: v.string(),
 
@@ -76,12 +82,34 @@ const configSchema = v.object({
   ),
 });
 
-export function validateConfig(config) {
+/** 从 schema 自动推导的配置输出类型 */
+export type Config = v.InferOutput<typeof configSchema>;
+
+/**
+ * Valibot issue 的最小结构描述。
+ * 我们只关心 path / expected / received / issues，避免依赖 Valibot 内部复杂的联合类型。
+ */
+interface IssueLike {
+  path?: readonly { key: PathKey }[];
+  expected?: string;
+  received?: string;
+  issues?: readonly IssueLike[];
+}
+
+/** 展平后供格式化使用的 issue */
+interface FlatIssue {
+  path: Path;
+  expected: string;
+  received: string;
+}
+
+/** 验证配置，成功时返回类型化的 Config，失败时抛出格式化的错误 */
+export function validateConfig(config: unknown): Config {
   try {
     return v.parse(configSchema, config, { abortEarly: true });
   } catch (error) {
     if (error instanceof v.ValiError) {
-      throw new Error(formatConfigError(error), {
+      throw new Error(formatConfigError(error as unknown as IssueLike), {
         cause: error,
       });
     }
@@ -89,7 +117,7 @@ export function validateConfig(config) {
   }
 }
 
-function formatConfigError(error) {
+function formatConfigError(error: IssueLike): string {
   const issues = flattenIssues(error);
   const issue = mergeUnionIssues(issues);
 
@@ -105,26 +133,34 @@ function formatConfigError(error) {
   ].join("\n");
 }
 
-function flattenIssues(error, parentPath = []) {
-  const result = [];
+/** 递归展平嵌套的 issues，并补全完整路径 */
+function flattenIssues(error: IssueLike, parentPath: Path = []): FlatIssue[] {
+  const result: FlatIssue[] = [];
 
-  for (const issue of error.issues) {
-    const currentPath = [...parentPath, ...(issue.path ?? []).map((item) => item.key)];
+  for (const issue of error.issues ?? []) {
+    const currentPath: Path = [...parentPath, ...(issue.path ?? []).map((item) => item.key)];
 
-    if (issue.issues) {
+    if (issue.issues && issue.issues.length > 0) {
       result.push(...flattenIssues(issue, currentPath));
     } else {
       result.push({
-        ...issue,
         path: currentPath,
+        expected: issue.expected ?? "unknown",
+        received: issue.received ?? "unknown",
       });
     }
   }
+
   return result;
 }
 
-function mergeUnionIssues(issues) {
+/** 合并同路径的 union 校验错误，将 expected 用 | 连接 */
+function mergeUnionIssues(issues: FlatIssue[]): FlatIssue {
   const issue = issues.at(-1);
+
+  if (!issue) {
+    throw new Error("No issues to merge");
+  }
 
   const matched = issues.filter(
     (item) => item.path.join(".") === issue.path.join(".") && item.received === issue.received,
