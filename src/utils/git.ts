@@ -3,8 +3,8 @@ import { x, type Options } from "tinyexec";
 import type { ResolvedOptions, ReleaseContext } from "../config/types.ts";
 import { defu, execCommand } from "./helpers.ts";
 
-function git(options: ResolvedOptions, args: string[], execOptions = {}) {
-  return x(
+async function git(options: ResolvedOptions, args: string[], execOptions: Partial<Options> = {}) {
+  return await x(
     "git",
     args,
     defu(execOptions, {

@@ -11,7 +11,7 @@ import {
   summary,
   git,
 } from "./release/index.ts";
-import { formatDuration, rollback, logger, runSideEffect, runHook } from "./utils/index.js";
+import { formatDuration, rollback, logger, runSideEffect, runHook } from "./utils/index.ts";
 
 export async function release(options: ResolvedOptions) {
   const start = performance.now();

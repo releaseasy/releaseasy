@@ -1,16 +1,16 @@
-import { createRequire } from "node:module";
-import path from "node:path";
-
 import ansis from "ansis";
 import { createConsola } from "consola";
 import { createDefu } from "defu";
 import { detect } from "package-manager-detector";
-import { x } from "tinyexec";
+import { type ResolvedCommand } from "package-manager-detector";
+import { x, type Options } from "tinyexec";
 
+import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
 import CONSTANTS from "../constants/index.ts";
 import { interpolate } from "./interpolate.ts";
 import { readPackageJSON } from "./pkg.ts";
 import { createSpinner } from "./spinner.ts";
+import type { Awaitable } from "./types.ts";
 
 export const logger = createConsola();
 
@@ -18,7 +18,11 @@ export const loggerWithTag = logger.withDefaults({
   tag: CONSTANTS.CLI_NAME,
 });
 
-export async function runSideEffect(options, description, action) {
+export async function runSideEffect<T>(
+  options: ResolvedOptions,
+  description: string,
+  action: () => Awaitable<T>,
+): Promise<T | undefined> {
   if (options.dryRun) {
     loggerWithTag.info(ansis.yellow(`[dry-run] would ${description}`));
     return;
@@ -27,8 +31,8 @@ export async function runSideEffect(options, description, action) {
   return await action();
 }
 
-export async function detectPackageManager(dir) {
-  const packageManager = await detect({ cwd: dir });
+export async function detectPackageManager(cwd: string) {
+  const packageManager = await detect({ cwd });
 
   if (!packageManager) {
     throw new Error("Could not detect the package manager used by this project.");
@@ -37,12 +41,13 @@ export async function detectPackageManager(dir) {
   return packageManager;
 }
 
-export function formatCommand(command) {
+export function formatCommand(command: ResolvedCommand) {
   return [command.command, ...command.args].join(" ");
 }
 
-export async function hasScripts(packageJsonPath, additions) {
+export async function hasScripts(packageJsonPath: string, additions: Record<string, string>) {
   const packageJson = await readPackageJSON(packageJsonPath);
+
   const scripts = packageJson.scripts ?? {};
 
   return Object.entries(additions).every(
@@ -57,7 +62,7 @@ export const defu = createDefu((obj, key, value) => {
   }
 });
 
-export function formatDuration(ms) {
+export function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms.toFixed(0)}ms`;
 
   const s = ms / 1000;
@@ -72,23 +77,15 @@ export function blank(lines = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
-export function isVerbose(options) {
+export function isVerbose(options: ResolvedOptions) {
   return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
 }
 
-export function isPackageInstalled(cwd, packageName) {
-  try {
-    const require = createRequire(path.join(cwd, `__${CONSTANTS.CLI_NAME}_resolver__.js`));
-
-    require.resolve(packageName);
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function runHook(options, hookName, context) {
+export async function runHook(
+  options: ResolvedOptions,
+  hookName: HookEvent,
+  context: ReleaseContext,
+): Promise<void> {
   if (!context) return;
 
   const { hooks } = options;
@@ -115,7 +112,12 @@ export async function runHook(options, hookName, context) {
   }
 }
 
-export async function execCommand(command, args, options, execOptions = {}) {
+export async function execCommand(
+  command: string,
+  args: string[],
+  options: ResolvedOptions,
+  execOptions = {},
+) {
   logCommand(options, command, args);
 
   return await x(
@@ -127,17 +129,17 @@ export async function execCommand(command, args, options, execOptions = {}) {
         cwd: options.cwd,
         stdio: options.verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
       },
-    }),
+    } satisfies Partial<Options>),
   );
 }
 
-export function logCommand(options, displayCommand, args) {
+export function logCommand(options: ResolvedOptions, displayCommand: string, args: string[]) {
   if (isVerbose(options)) {
     loggerWithTag.log(ansis.yellow(`$ ${displayCommand} ${formatArgs(args)}`));
   }
 }
 
-function formatArgs(args = []) {
+function formatArgs(args: string[] = []) {
   return args
     .map((arg) => {
       const value = String(arg);

@@ -14,7 +14,7 @@ type StepHookEvent = `before:${StepName}` | `after:${StepName}`;
 
 type LifecycleHookEvent = "before:init" | "after:release";
 
-type HookEvent = StepHookEvent | LifecycleHookEvent;
+export type HookEvent = StepHookEvent | LifecycleHookEvent;
 
 type Hooks = Partial<Record<HookEvent, string | string[]>>;
 
