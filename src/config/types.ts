@@ -50,7 +50,7 @@ export interface ResolvedOptions {
     addArgs: string[];
     commitArgs: string[];
     tagName: string;
-    changelog: false | ChangelogOptions;
+    changelog: false | Required<ChangelogOptions>;
   };
   hooks?: Hooks;
   cwd: string;
@@ -62,7 +62,7 @@ export interface ResolvedOptions {
 export interface ReleaseContext {
   name: string;
   resolvedCwd: string;
-  resolvedCliffFile: string;
+  resolvedCliffFile: string | undefined;
   latestVersion: string;
   remoteUrl: string;
   packageJsonPath: string;

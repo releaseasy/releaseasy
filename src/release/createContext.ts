@@ -4,6 +4,7 @@ import ansis from "ansis";
 import { resolveCommand } from "package-manager-detector/commands";
 import { valid } from "semver";
 
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
 import CONSTANTS from "../constants/index.js";
 import {
   isGitAvailable,
@@ -20,7 +21,7 @@ import {
   formatCommand,
 } from "../utils/index.js";
 
-export async function createContext(options) {
+export async function createContext(options: ResolvedOptions): Promise<ReleaseContext> {
   const { cwd, git } = options;
 
   // 判断目录
@@ -60,7 +61,7 @@ export async function createContext(options) {
     throw new Error(`package.json "version" must be a valid semver version.`);
   }
 
-  let initialCommitSha;
+  let initialCommitSha: string;
   try {
     initialCommitSha = await getCurrentCommitSha(options);
   } catch (_error) {
@@ -69,7 +70,7 @@ export async function createContext(options) {
     });
   }
 
-  let branchName;
+  let branchName: string;
   try {
     branchName = await getCurrentBranch(options);
   } catch {
@@ -82,7 +83,7 @@ export async function createContext(options) {
     );
   }
 
-  let resolvedCliffFile;
+  let resolvedCliffFile: string | undefined;
   // 提前抛出配置缺少的错误,用户体验更好
   if (git.changelog !== false) {
     // 判断配置文件是否存在
@@ -122,7 +123,7 @@ export async function createContext(options) {
   };
 }
 
-function matchBranch(requireBranch, inputBranch) {
+function matchBranch(requireBranch: ResolvedOptions["git"]["requireBranch"], inputBranch: string) {
   if (requireBranch === false) return true;
 
   if (typeof requireBranch === "string") {
