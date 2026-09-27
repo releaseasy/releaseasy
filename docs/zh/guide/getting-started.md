@@ -2,6 +2,13 @@
 
 ## 安装
 
+### 前置准备
+
+- [Node.js](https://nodejs.org/) 22.18.0 及以上版本。
+- 可使用终端运行命令的命令行环境（CLI）。
+
+releaseasy 可以作为独立工具使用，也可以安装到现有项目中。无论哪种使用方式，都可以通过以下方式安装：
+
 ::: code-group
 
 ```sh [npm]
@@ -22,7 +29,7 @@ bun add -D releaseasy
 
 :::
 
-## 安装向导{#setup-wizard}
+### 安装向导{#setup-wizard}
 
 releaseasy 附带一个命令行设置向导，可以帮助你快速生成基本的配置文件。安装后，通过运行以下命令启动向导：
 
@@ -50,12 +57,16 @@ bun releaseasy init
 
 <<< @/snippets/init.ansi
 
-### 配置文件
+## 文件结构
 
 当你运行完毕安装向导后会生成两个配置文件:
 
-- releaseasy.config.mjs
-- cliff.toml
+```text
+.
+├─ releaseasy.config.mjs
+├─ cliff.toml
+└─ package.json
+```
 
 一个是 releaseasy 所需的配置文件一个是[git-cliff](https://git-cliff.org/docs/usage/initializing)的配置文件。
 

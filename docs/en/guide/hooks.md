@@ -3,7 +3,7 @@
 The purpose of hooks is to execute some shell scripts at specific stages.
 
 > [!TIP]
-> Click here to view the currently supported list of [lifecycle hooks](/reference/option-hooks#life-cycle).
+> Click here to view the currently supported list of [lifecycle hooks](../reference/option-hooks#life-cycle).
 
 ## Formatting after changelog generation
 

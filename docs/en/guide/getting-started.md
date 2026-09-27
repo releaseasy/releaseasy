@@ -2,6 +2,13 @@
 
 ## Installation
 
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 22.18.0 or later.
+- A command-line environment (CLI) where you can run commands in a terminal.
+
+releaseasy can be used as a standalone tool or installed into an existing project. Either way, you can install it using the following methods:
+
 ::: code-group
 
 ```sh [npm]
@@ -22,7 +29,7 @@ bun add -D releaseasy
 
 :::
 
-## Setup Wizard{#setup-wizard}
+### Setup Wizard {#setup-wizard}
 
 releaseasy comes with a command-line setup wizard that helps you quickly generate a basic configuration file. After installation, start the wizard by running the following command:
 
@@ -50,17 +57,21 @@ You will need to answer a few simple questions:
 
 <<< @/snippets/init.ansi
 
-### Configuration File
+## File Structure
 
-After you finish running the setup wizard, two configuration files will be generated:
+After you run the setup wizard, two configuration files will be generated:
 
-- releaseasy.config.mjs
-- cliff.toml
+```text
+.
+├─ releaseasy.config.mjs
+├─ cliff.toml
+└─ package.json
+```
 
 One is the configuration file required by releaseasy, and the other is the configuration file for [git-cliff](https://git-cliff.org/docs/usage/initializing).
 
 > [!TIP]
-> For complete details on all configuration options for releaseasy, please refer to the [Configuration](/reference/config) reference.
+> For complete details on all configuration options for releaseasy, see the [Configuration](/reference/config) reference.
 
 ## Up and Running {#up-and-running}
 
@@ -76,7 +87,7 @@ The tool should also inject the following npm script into `package.json`:
 }
 ```
 
-When your project is ready to release, run it with the following command:
+When your project is ready to release, run it using the following command:
 
 ::: code-group
 
@@ -120,10 +131,10 @@ $ bun releaseasy
 
 :::
 
-For more command-line usage, please refer to the [CLI Reference](../reference/cli).
+For more command-line usage, see the [CLI Reference](../reference/cli).
 
 ## What's Next {#what-s-next}
 
-- To learn more about continuous integration after pushing to a remote repository, continue reading [Subsequent CI/CD Integration](./cicd).
+- To learn more about continuous integration after pushing to a remote repository, continue reading [CI/CD Integration](./cicd).
 
-- To learn about formatting after changelog generation, continue reading [Hooks](./hooks).
+- To learn about formatting the changelog after it is generated, continue reading [Hooks](./hooks).

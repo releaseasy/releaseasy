@@ -3,7 +3,7 @@
 该钩子的作用是在特定的阶段执行一些 shell 脚本。
 
 > [!TIP]
-> 点此查看目前支持的[生命周期钩子](/reference/option-hooks#life-cycle)列表。
+> 点此查看目前支持的[生命周期钩子](../reference/option-hooks#life-cycle)列表。
 
 ## 变更日志生成后格式化
 
