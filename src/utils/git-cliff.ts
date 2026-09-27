@@ -1,16 +1,16 @@
 import { createRequire } from "node:module";
 import { arch as getArch, platform as getPlatform } from "node:os";
 
-import { x } from "tinyexec";
+import { x, type Options, type Output } from "tinyexec";
 
-import { defu } from "./helpers.js";
+import { defu } from "./helpers.ts";
 
 const require = createRequire(import.meta.url);
 
 export async function runGitCliff(
   args: string[],
-  execOptions: Parameters<typeof x>[2] = {},
-): Promise<import("tinyexec").Output> {
+  execOptions: Partial<Options> = {},
+): Promise<Output> {
   const bin = getExePath();
 
   return await x(
@@ -21,7 +21,7 @@ export async function runGitCliff(
       nodeOptions: {
         stdio: "inherit",
       },
-    }),
+    } satisfies Partial<Options>),
   );
 }
 

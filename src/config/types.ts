@@ -61,6 +61,9 @@ export interface ResolvedOptions {
 // release 流程 运行时的上下文数据
 export interface ReleaseContext {
   name: string;
+  version: string;
+  tagName: string;
+  commitMessage: string;
   resolvedCwd: string;
   resolvedCliffFile: string | undefined;
   latestVersion: string;

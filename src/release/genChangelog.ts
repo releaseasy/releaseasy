@@ -1,5 +1,5 @@
 import { logCommand, runGitCliff, runHook } from "../utils/index.js";
-import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
+import { isVerbose, interpolate, strArgv, withSpinner } from "../utils/index.js";
 
 export async function genChangelog(options, context) {
   // 前置钩子
@@ -29,7 +29,7 @@ export async function genChangelog(options, context) {
 async function buildGitCliffArgs(options, context) {
   const { args: argTemplate, output } = options.git.changelog;
 
-  const args = parseArgsStringToArgv(interpolate(argTemplate, context));
+  const args = strArgv(interpolate(argTemplate, context));
 
   args.push("--config", context.resolvedCliffFile);
   args.push("--output", output);

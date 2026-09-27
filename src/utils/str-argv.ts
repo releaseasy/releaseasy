@@ -1,8 +1,16 @@
-export function parseArgsStringToArgv(input) {
-  const args = [];
+export function strArgv(input: string, env?: string, file?: string): string[] {
+  const args: string[] = [];
+
+  if (env !== undefined) {
+    args.push(env);
+  }
+
+  if (file !== undefined) {
+    args.push(file);
+  }
 
   let current = "";
-  let quote = null;
+  let quote: "'" | '"' | null = null;
   let escaped = false;
   let hasToken = false;
 
@@ -16,10 +24,9 @@ export function parseArgsStringToArgv(input) {
     hasToken = false;
   };
 
-  for (const char of input.trim()) {
+  for (const char of input) {
     if (escaped) {
       current += char;
-      hasToken = true;
       escaped = false;
       continue;
     }

@@ -1,8 +1,9 @@
-import { x } from "tinyexec";
+import { x, type Options } from "tinyexec";
 
-import { defu, execCommand } from "../utils/helpers.js";
+import type { ResolvedOptions, ReleaseContext } from "../config/types.ts";
+import { defu, execCommand } from "./helpers.ts";
 
-function git(options, args, execOptions = {}) {
+function git(options: ResolvedOptions, args: string[], execOptions = {}) {
   return x(
     "git",
     args,
@@ -12,11 +13,11 @@ function git(options, args, execOptions = {}) {
         cwd: options.cwd,
         stdio: "pipe",
       },
-    }),
+    } satisfies Partial<Options>),
   );
 }
 
-export async function isGitAvailable(options) {
+export async function isGitAvailable(options: ResolvedOptions) {
   try {
     await git(options, ["--version"]);
     return true;
@@ -25,7 +26,7 @@ export async function isGitAvailable(options) {
   }
 }
 
-export async function isGitRepository(options) {
+export async function isGitRepository(options: ResolvedOptions) {
   try {
     const { stdout } = await git(options, ["rev-parse", "--is-inside-work-tree"]);
 
@@ -35,7 +36,7 @@ export async function isGitRepository(options) {
   }
 }
 
-export async function getWorkingTreeChanges(options) {
+export async function getWorkingTreeChanges(options: ResolvedOptions) {
   return await git(options, ["status", "--porcelain"], {
     nodeOptions: {
       stdio: "inherit",
@@ -43,13 +44,13 @@ export async function getWorkingTreeChanges(options) {
   });
 }
 
-export async function isWorkingTreeClean(options) {
+export async function isWorkingTreeClean(options: ResolvedOptions) {
   const { stdout } = await git(options, ["status", "--porcelain"]);
 
   return stdout.trim().length === 0;
 }
 
-export async function getRemoteUrl(options) {
+export async function getRemoteUrl(options: ResolvedOptions) {
   try {
     const { stdout } = await git(options, ["remote", "get-url", "origin"]);
 
@@ -59,18 +60,18 @@ export async function getRemoteUrl(options) {
   }
 }
 
-export async function getCurrentBranch(options) {
+export async function getCurrentBranch(options: ResolvedOptions) {
   const { stdout } = await git(options, ["symbolic-ref", "--short", "HEAD"]);
   return stdout.trim();
 }
 
-export async function getCurrentCommitSha(options) {
+export async function getCurrentCommitSha(options: ResolvedOptions) {
   const { stdout } = await git(options, ["rev-parse", "HEAD"]);
 
   return stdout.trim();
 }
 
-async function deleteTag(options, context) {
+async function deleteTag(options: ResolvedOptions, context: ReleaseContext) {
   const { tagCreated, tagName } = context;
 
   if (!tagCreated) {
@@ -79,7 +80,7 @@ async function deleteTag(options, context) {
   await git(options, ["tag", "-d", tagName]);
 }
 
-async function reset(options, context) {
+async function reset(options: ResolvedOptions, context: ReleaseContext) {
   const { initialCommitSha } = context;
   if (!initialCommitSha) {
     return;
@@ -91,16 +92,16 @@ async function reset(options, context) {
   await git(options, ["clean", "-fd"]);
 }
 
-export async function rollback(options, context) {
+export async function rollback(options: ResolvedOptions, context: ReleaseContext) {
   await deleteTag(options, context);
   await reset(options, context);
 }
 
-export async function add(options) {
+export async function add(options: ResolvedOptions) {
   await execCommand("git", ["add", ...options.git.addArgs], options);
 }
 
-export async function commit(options, context) {
+export async function commit(options: ResolvedOptions, context: ReleaseContext) {
   await execCommand(
     "git",
     ["commit", ...options.git.commitArgs, "-m", context.commitMessage],
@@ -108,12 +109,12 @@ export async function commit(options, context) {
   );
 }
 
-export async function tag(options, context) {
+export async function tag(options: ResolvedOptions, context: ReleaseContext) {
   await execCommand("git", ["tag", "-f", context.tagName], options);
 
   context.tagCreated = true;
 }
 
-export async function push(options, context) {
+export async function push(options: ResolvedOptions, context: ReleaseContext) {
   await execCommand("git", ["push", "origin", "HEAD", `refs/tags/${context.tagName}`], options);
 }

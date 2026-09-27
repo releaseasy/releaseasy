@@ -7,10 +7,10 @@ import { createDefu } from "defu";
 import { detect } from "package-manager-detector";
 import { x } from "tinyexec";
 
-import CONSTANTS from "../constants/index.js";
-import { interpolate } from "./interpolate.js";
-import { readPackageJSON } from "./pkg.js";
-import { createSpinner } from "./spinner.js";
+import CONSTANTS from "../constants/index.ts";
+import { interpolate } from "./interpolate.ts";
+import { readPackageJSON } from "./pkg.ts";
+import { createSpinner } from "./spinner.ts";
 
 export const logger = createConsola();
 

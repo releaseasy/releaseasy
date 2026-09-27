@@ -1,7 +1,5 @@
 const CLI_NAME = "releaseasy";
 
-const VARIABLE_RE = /\$\{([^}]+)\}/g;
-
 const DEFAULTS = {
   increments: ["patch", "minor", "major"],
   distTags: ["latest", "next"],
@@ -111,7 +109,7 @@ export default {
   DEFAULT_SCRIPTS,
   DEFAULTS,
   CLI_NAME,
-  VARIABLE_RE,
+
   LOG_LEVEL,
   CONFIG_FORMAT_CHOICES,
   CHANGELOG_FORMAT_CHOICES,
