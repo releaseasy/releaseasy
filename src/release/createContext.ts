@@ -5,7 +5,7 @@ import { resolveCommand } from "package-manager-detector/commands";
 import { valid } from "semver";
 
 import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
-import CONSTANTS from "../constants/index.js";
+import CONSTANTS from "../constants/index.ts";
 import {
   isGitAvailable,
   isGitRepository,
@@ -19,7 +19,7 @@ import {
   detectPackageManager,
   exists,
   formatCommand,
-} from "../utils/index.js";
+} from "../utils/index.ts";
 
 export async function createContext(options: ResolvedOptions): Promise<ReleaseContext> {
   const { cwd, git } = options;

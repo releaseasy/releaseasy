@@ -1,7 +1,15 @@
-import { logCommand, runGitCliff, runHook } from "../utils/index.js";
-import { isVerbose, interpolate, strArgv, withSpinner } from "../utils/index.js";
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import {
+  isVerbose,
+  interpolate,
+  strArgv,
+  withSpinner,
+  logCommand,
+  runGitCliff,
+  runHook,
+} from "../utils/index.ts";
 
-export async function genChangelog(options, context) {
+export async function genChangelog(options: ResolvedOptions, context: ReleaseContext) {
   // 前置钩子
   await runHook(options, "before:changelog", context);
 
@@ -26,7 +34,7 @@ export async function genChangelog(options, context) {
   await runHook(options, "after:changelog", context);
 }
 
-async function buildGitCliffArgs(options, context) {
+async function buildGitCliffArgs(options: ResolvedOptions, context: ReleaseContext) {
   const { args: argTemplate, output } = options.git.changelog;
 
   const args = strArgv(interpolate(argTemplate, context));
@@ -45,7 +53,7 @@ async function buildGitCliffArgs(options, context) {
   return args;
 }
 
-function getVerboseArgs(options) {
+function getVerboseArgs(options: ResolvedOptions) {
   if (!isVerbose(options)) {
     return [];
   }

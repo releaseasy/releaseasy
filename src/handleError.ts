@@ -1,5 +1,5 @@
 import CONSTANTS from "./constants/index.ts";
-import { logger } from "./utils/index.js";
+import { logger } from "./utils/index.ts";
 
 export interface HandleErrorOptions {
   verbose?: number;

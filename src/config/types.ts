@@ -1,6 +1,6 @@
 import type { ReleaseType } from "semver";
 
-type DistTag = "latest" | "next" | "beta" | "alpha" | "canary" | "rc" | (string & {}); // 允许自定义
+export type DistTag = "latest" | "next" | "beta" | "alpha" | "canary" | "rc" | (string & {}); // 允许自定义
 
 type ChangelogOptions = {
   output?: string;
@@ -63,6 +63,7 @@ export interface ReleaseContext {
   name: string;
   version: string;
   tagName: string;
+  distTag: DistTag;
   commitMessage: string;
   resolvedCwd: string;
   resolvedCliffFile: string | undefined;

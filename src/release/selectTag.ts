@@ -1,29 +1,24 @@
 import { select } from "@inquirer/prompts";
 import { prerelease } from "semver";
 
-export async function selectTag(options, context) {
+import type { DistTag, ReleaseContext, ResolvedOptions } from "../config/types.ts";
+
+export async function selectTag(options: ResolvedOptions, context: ReleaseContext): Promise<void> {
   const isPrerelease = Boolean(prerelease(context.version));
 
-  const enabled = [];
-  const disabled = [];
-
-  for (const tag of options.distTags) {
-    const item = {
+  const choices = options.distTags
+    .map((tag) => ({
       name: tag,
       value: tag,
       disabled: isPrerelease && tag === "latest",
-    };
-    (item.disabled ? disabled : enabled).push(item);
-  }
+    }))
+    .toSorted((a, b) => Number(a.disabled) - Number(b.disabled));
 
-  const choices = [...enabled, ...disabled];
-
-  const distTag = await select({
+  const distTag = await select<DistTag>({
     message: "Select npm dist-tag",
-    choices: choices,
+    choices,
+    loop: false,
   });
 
-  Object.assign(context, {
-    distTag,
-  });
+  context.distTag = distTag;
 }
