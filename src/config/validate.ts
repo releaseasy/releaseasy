@@ -67,7 +67,7 @@ const configSchema = v.object({
   }),
 
   // hooks
-  hooks: v.optional(
+  hooks: v.exactOptional(
     v.record(
       v.picklist([
         "before:init",

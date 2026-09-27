@@ -37,7 +37,7 @@ export interface InlineConfig extends UserConfig {
   cwd?: string;
   config?: string;
   dryRun?: boolean;
-  verbose?: boolean[];
+  verbose?: number;
 }
 
 // 内部用的选项
@@ -54,9 +54,8 @@ export interface ResolvedOptions {
   };
   hooks?: Hooks;
   cwd: string;
-  config: string;
   dryRun: boolean;
-  verbose: boolean[];
+  verbose: number;
 }
 
 // release 流程 运行时的上下文数据

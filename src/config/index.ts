@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 
 import CONSTANTS from "../constants/index.js";
 import { defu } from "../utils/index.js";
-import { loadConfig } from "./load.js";
+import { loadConfig } from "./load.ts";
 import type { InlineConfig, ResolvedOptions } from "./types.ts";
 import { validateConfig } from "./validate.ts";
 
