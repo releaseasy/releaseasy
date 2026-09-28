@@ -5,9 +5,9 @@ import { fileURLToPath } from "node:url";
 import ansis from "ansis";
 
 import packageJson from "../../package.json" with { type: "json" };
-import CONSTANTS from "../constants/index.js";
+import CONSTANTS from "../constants/index.ts";
 import jsonConfig from "../init/templates/releaseasy.config.json" with { type: "json" };
-import { exists, runGitCliff, updatePackageJSON } from "../utils/index.js";
+import { exists, runGitCliff, updatePackageJSON } from "../utils/index.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

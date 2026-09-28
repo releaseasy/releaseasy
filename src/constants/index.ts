@@ -42,7 +42,7 @@ const CONFIG_FORMAT_CHOICES = [
     name: "package.json",
     value: "packageJson",
   },
-];
+] as const;
 
 const CHANGELOG_FORMAT_CHOICES = [
   {

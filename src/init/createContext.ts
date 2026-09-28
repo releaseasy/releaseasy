@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import type { InitContext, ResolvedInitOptions } from "../config/types.ts";
 import {
   exists,
   assertDirectory,
@@ -7,9 +8,9 @@ import {
   readPackageJSON,
   isPackageInstalled,
   detectPackageManager,
-} from "../utils/index.js";
+} from "../utils/index.ts";
 
-export async function createContext(options) {
+export async function createContext(options: ResolvedInitOptions): Promise<InitContext> {
   const { cwd } = options;
   const resolvedCwd = await assertDirectory(cwd);
 
@@ -19,15 +20,16 @@ export async function createContext(options) {
 
   const packageJson = await readPackageJSON(packageJsonPath);
 
-  return {
-    cwd: resolvedCwd,
-    packageManager,
-    packageJsonPath,
-    isTypeScriptProject: await isTypeScriptProject(resolvedCwd),
-    moduleFormat: packageJson.type === "module" ? "esm" : "commonjs",
-  };
+  const context: InitContext = Object.create(null);
+
+  context.resolvedCwd = resolvedCwd;
+  context.packageManager = packageManager;
+  context.packageJsonPath = packageJsonPath;
+  context.isTypeScriptProject = await isTypeScriptProject(resolvedCwd);
+  context.moduleFormat = packageJson.type === "module" ? "esm" : "commonjs";
+  return context;
 }
 
-async function isTypeScriptProject(cwd) {
+async function isTypeScriptProject(cwd: string) {
   return (await exists(path.join(cwd, "tsconfig.json"))) || isPackageInstalled(cwd, "typescript");
 }

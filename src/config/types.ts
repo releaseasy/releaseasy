@@ -1,4 +1,7 @@
+import type { DetectResult } from "package-manager-detector";
 import type { ReleaseType } from "semver";
+
+import CONSTANTS from "../constants/index.ts";
 
 export type DistTag = "latest" | "next" | "beta" | "alpha" | "canary" | "rc" | (string & {}); // 允许自定义
 
@@ -76,4 +79,24 @@ export interface ReleaseContext {
   changelog: {
     output: string;
   };
+}
+
+export interface InitOptions {
+  cwd?: string;
+  force?: boolean;
+}
+
+export type ResolvedInitOptions = Required<InitOptions>;
+
+type ConfigFormat = (typeof CONSTANTS.CONFIG_FORMAT_CHOICES)[number]["value"];
+
+export interface InitContext {
+  resolvedCwd: string;
+  packageManager: DetectResult;
+  packageJsonPath: string;
+  configFormat: ConfigFormat;
+  changelogFormat: string;
+  isTypeScriptProject: boolean;
+  shouldAddScripts: boolean;
+  moduleFormat: "esm" | "commonjs";
 }

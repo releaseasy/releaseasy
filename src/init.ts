@@ -1,37 +1,26 @@
 import ansis from "ansis";
 
+import type { InitOptions, ResolvedInitOptions } from "./config/types.ts";
 import CONSTANTS from "./constants/index.ts";
-import {
-  createContext,
-  promptInit,
-  install,
-  generateFiles,
-  addScripts,
-  dump,
-} from "./init/index.ts";
+import { createContext, promptInit, generateFiles, addScripts, dump } from "./init/index.ts";
 import { logger, blank } from "./utils/index.ts";
 
-export async function init(inlineOps = {}) {
-  const options = {
-    cwd: inlineOps.cwd ?? process.cwd(),
-    force: inlineOps.force ?? false,
+export async function init(options: InitOptions = {}) {
+  const resolvedOptions: ResolvedInitOptions = {
+    cwd: options.cwd ?? process.cwd(),
+    force: options.force ?? false,
   };
   blank();
   logger.log(`${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}`);
   blank();
   // 获取基本的上下文
-  const context = await createContext(options);
+  const context = await createContext(resolvedOptions);
 
   // 交互式配置
   await promptInit(context);
 
-  // 下载jiti
-  if (context.configFormat === "typescript") {
-    await install(context);
-  }
-
   // 生成配置文件
-  await generateFiles(options, context);
+  await generateFiles(resolvedOptions, context);
 
   // 添加脚本到package.json
   await addScripts(context);
