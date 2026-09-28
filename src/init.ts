@@ -1,6 +1,6 @@
 import ansis from "ansis";
 
-import CONSTANTS from "./constants/index.js";
+import CONSTANTS from "./constants/index.ts";
 import {
   createContext,
   promptInit,
@@ -8,8 +8,8 @@ import {
   generateFiles,
   addScripts,
   dump,
-} from "./init/index.js";
-import { logger, blank } from "./utils/index.js";
+} from "./init/index.ts";
+import { logger, blank } from "./utils/index.ts";
 
 export async function init(inlineOps = {}) {
   const options = {

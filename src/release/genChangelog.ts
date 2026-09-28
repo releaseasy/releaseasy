@@ -40,7 +40,7 @@ async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: Rele
 
   const args = strArgv(interpolate(argTemplate, context));
 
-  args.push("--config", context.resolvedCliffFile);
+  args.push("--config", context.resolvedCliffFile as string);
   args.push("--output", output);
   args.push(...getVerboseArgs(options));
 

@@ -1,6 +1,6 @@
 import { confirm } from "@inquirer/prompts";
 
-import { cancel } from "../handleError.js";
+import { cancel } from "../handleError.ts";
 
 export async function confirmChangelog() {
   const normal = await confirm({

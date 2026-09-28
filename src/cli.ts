@@ -65,7 +65,7 @@ const initCommand = new Command("init")
   .option("-f, --force", "Overwrite existing configuration", false);
 
 initCommand.action(async (options) => {
-  const { init } = await import("./init.js");
+  const { init } = await import("./init.ts");
 
   await init(options);
 });

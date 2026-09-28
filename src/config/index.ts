@@ -1,14 +1,12 @@
 import { resolve } from "node:path";
 
-import CONSTANTS from "../constants/index.js";
-import { defu } from "../utils/index.js";
+import CONSTANTS from "../constants/index.ts";
+import { defu } from "../utils/index.ts";
 import { loadConfig } from "./load.ts";
 import type { InlineConfig, ResolvedOptions } from "./types.ts";
 import { validateConfig } from "./validate.ts";
 
 export async function resolveConfig(inlineConfig: InlineConfig): Promise<ResolvedOptions> {
-  console.log("wwwwwwwwwwwwwwwwwww");
-
   inlineConfig = normalizeInlineOptions(inlineConfig);
 
   const { config, ...inlineOptions } = inlineConfig;

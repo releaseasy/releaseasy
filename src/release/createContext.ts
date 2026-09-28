@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import ansis from "ansis";
-import { resolveCommand } from "package-manager-detector/commands";
+import { resolveCommand, type DetectResult } from "package-manager-detector";
 import { valid } from "semver";
 
 import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
@@ -27,22 +27,10 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
 
   // 判断目录
   const resolvedCwd = await assertDirectory(cwd);
-  const packageJsonPath = await resolvePackageJSON(cwd);
+  const packageJsonPath = await resolvePackageJSON(resolvedCwd);
   const packageManager = await detectPackageManager(resolvedCwd);
 
-  if (!(await isGitAvailable(options))) {
-    throw new Error(
-      "Git is not installed or not available in your PATH. Please install Git to continue.",
-    );
-  }
-
-  if (!(await isGitRepository(options))) {
-    throw new Error("Current working directory is not a git repository.");
-  }
-
-  if (!(await isWorkingTreeClean(options))) {
-    throw new Error("Working directory is not clean. Please commit your changes.");
-  }
+  await assertGitReady(options);
 
   const remoteUrl = await getRemoteUrl(options);
 
@@ -72,39 +60,8 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
     );
   }
 
-  let resolvedCliffFile: string | undefined;
   // 提前抛出配置缺少的错误,用户体验更好
-
-  if (isChangelogEnabled(options)) {
-    // 判断配置文件是否存在
-    resolvedCliffFile = path.join(resolvedCwd, options.git.changelog.configFile);
-
-    const initCommand = resolveCommand(packageManager.agent, "execute-local", [
-      CONSTANTS.CLI_NAME,
-      "init",
-    ]);
-
-    const changelogCommand = resolveCommand(packageManager.agent, "execute-local", [
-      CONSTANTS.CLI_NAME,
-      "changelog",
-      "--init",
-      "[template]",
-    ]);
-
-    if (!initCommand || !changelogCommand) {
-      throw new Error(
-        `Unable to resolve the package manager command for "${packageManager.agent}".`,
-      );
-    }
-
-    if (!(await exists(resolvedCliffFile))) {
-      throw Error(
-        `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +
-          `Run "${ansis.cyan(formatCommand(initCommand))}" to initialize the configuration.\n` +
-          `or "${ansis.cyan(formatCommand(changelogCommand))}" to initialize the Git-cliff configuration.`,
-      );
-    }
-  }
+  const resolvedCliffFile = await resolveCliffFile(options, resolvedCwd, packageManager);
 
   const obj: ReleaseContext = Object.create(null);
 
@@ -119,6 +76,60 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
   obj.branchName = branchName;
 
   return obj;
+}
+
+async function assertGitReady(options: ResolvedOptions) {
+  if (!(await isGitAvailable(options))) {
+    throw new Error(
+      "Git is not installed or not available in your PATH. Please install Git to continue.",
+    );
+  }
+
+  if (!(await isGitRepository(options))) {
+    throw new Error("Current working directory is not a git repository.");
+  }
+
+  if (!(await isWorkingTreeClean(options))) {
+    throw new Error("Working directory is not clean. Please commit your changes.");
+  }
+}
+
+export async function resolveCliffFile(
+  options: ResolvedOptions,
+  cwd: string,
+  packageManager: DetectResult,
+) {
+  if (!isChangelogEnabled(options)) {
+    return undefined;
+  }
+
+  const resolvedCliffFile = path.join(cwd, options.git.changelog.configFile);
+
+  const initCommand = resolveCommand(packageManager.agent, "execute-local", [
+    CONSTANTS.CLI_NAME,
+    "init",
+  ]);
+
+  const changelogCommand = resolveCommand(packageManager.agent, "execute-local", [
+    CONSTANTS.CLI_NAME,
+    "changelog",
+    "--init",
+    "[template]",
+  ]);
+
+  if (!initCommand || !changelogCommand) {
+    throw new Error(`Unable to resolve the package manager command for "${packageManager.agent}".`);
+  }
+
+  if (!(await exists(resolvedCliffFile))) {
+    throw Error(
+      `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +
+        `Run "${ansis.cyan(formatCommand(initCommand))}" to initialize the configuration.\n` +
+        `or "${ansis.cyan(formatCommand(changelogCommand))}" to initialize the Git-cliff configuration.`,
+    );
+  }
+
+  return resolvedCliffFile;
 }
 
 function matchBranch(requireBranch: ResolvedOptions["git"]["requireBranch"], inputBranch: string) {

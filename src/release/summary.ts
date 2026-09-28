@@ -1,10 +1,11 @@
 import { confirm } from "@inquirer/prompts";
 import ansis from "ansis";
 
-import { cancel } from "../handleError.js";
-import { logger, blank, getWorkingTreeChanges } from "../utils/index.js";
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import { cancel } from "../handleError.ts";
+import { logger, blank, getWorkingTreeChanges } from "../utils/index.ts";
 
-export async function summary(options, context) {
+export async function summary(options: ResolvedOptions, context: ReleaseContext) {
   const { version, distTag, branchName, tagName } = context;
   const data = {
     Version: version,
@@ -31,13 +32,13 @@ export async function summary(options, context) {
   if (!ok) cancel();
 }
 
-function renderSection(title, fn) {
+function renderSection(title: string, fn: () => void | Promise<void>) {
   blank();
   logger.log(ansis.cyan(title));
   return fn();
 }
 
-function renderKeyValue(data) {
+function renderKeyValue(data: Record<string, string>) {
   const maxKeyLength = Math.max(...Object.keys(data).map((k) => k.length));
 
   for (const [key, val] of Object.entries(data)) {

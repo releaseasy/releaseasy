@@ -18,6 +18,7 @@ import {
   runSideEffect,
   runHook,
   isChangelogEnabled,
+  clearScreen,
 } from "./utils/index.ts";
 import type { ExcludeAt } from "./utils/types.ts";
 
@@ -25,6 +26,8 @@ export type ChangelogEnabledOptions = ExcludeAt<ResolvedOptions, "git.changelog"
 
 export async function release(options: ResolvedOptions) {
   const start = performance.now();
+
+  clearScreen();
 
   const context = await createContext(options);
 

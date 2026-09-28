@@ -73,7 +73,7 @@ export function formatDuration(ms: number): string {
   return `${m}m ${rest}s`;
 }
 
-export function blank(lines = 1) {
+export function blank(lines: number = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
@@ -82,6 +82,14 @@ export function isVerbose(options: ResolvedOptions) {
 }
 export function isChangelogEnabled(options: ResolvedOptions): options is ChangelogEnabledOptions {
   return options.git.changelog !== false;
+}
+
+export function clearScreen(): void {
+  if (!process.stdout.isTTY) {
+    return;
+  }
+
+  process.stdout.write("\x1B[2J\x1B[H");
 }
 
 export async function runHook(
