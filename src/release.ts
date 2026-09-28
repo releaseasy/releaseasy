@@ -1,6 +1,7 @@
 import ansis from "ansis";
 
-import type { ResolvedOptions } from "./config/types.ts";
+import { resolveConfig } from "./config/index.ts";
+import type { InlineConfig, ResolvedOptions } from "./config/types.ts";
 import {
   createContext,
   selectVersion,
@@ -18,45 +19,47 @@ import {
   runSideEffect,
   runHook,
   isChangelogEnabled,
-  clearScreen,
 } from "./utils/index.ts";
 import type { ExcludeAt } from "./utils/types.ts";
 
 export type ChangelogEnabledOptions = ExcludeAt<ResolvedOptions, "git.changelog", false>;
 
-export async function release(options: ResolvedOptions) {
+export async function release(options: InlineConfig = {}) {
+  const resolvedOptions = await resolveConfig(options);
+
   const start = performance.now();
-
-  clearScreen();
-
-  const context = await createContext(options);
+  const context = await createContext(resolvedOptions);
 
   try {
-    await runHook(options, "before:init", context);
-    await selectVersion(options, context);
-    await selectTag(options, context);
+    await runHook(resolvedOptions, "before:init", context);
+    await selectVersion(resolvedOptions, context);
+    await selectTag(resolvedOptions, context);
 
-    if (isChangelogEnabled(options)) {
-      await runSideEffect(options, "Generate changelog", async () => {
-        await genChangelog(options, context);
+    if (isChangelogEnabled(resolvedOptions)) {
+      await runSideEffect(resolvedOptions, "Generate changelog", async () => {
+        await genChangelog(resolvedOptions, context);
         await confirmChangelog();
       });
     }
 
-    await runSideEffect(options, `Bump version to ${context.version}`, async () => {
-      await bump(options, context);
+    await runSideEffect(resolvedOptions, `Bump version to ${context.version}`, async () => {
+      await bump(resolvedOptions, context);
     });
 
-    await summary(options, context);
+    await summary(resolvedOptions, context);
 
-    await runSideEffect(options, `Git operations`, async () => await git(options, context));
+    await runSideEffect(
+      resolvedOptions,
+      `Git operations`,
+      async () => await git(resolvedOptions, context),
+    );
 
-    await runHook(options, "after:release", context);
+    await runHook(resolvedOptions, "after:release", context);
 
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
   } catch (err) {
-    await rollback(options, context);
+    await rollback(resolvedOptions, context);
     throw err;
   }
 }

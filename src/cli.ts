@@ -3,14 +3,13 @@
 import { Command } from "commander";
 
 import pkg from "../package.json" with { type: "json" };
-import { resolveConfig } from "./config/index.ts";
 import { type InlineConfig } from "./config/types.ts";
 import CONSTANTS from "./constants/index.ts";
 import { handleError } from "./handleError.ts";
 
 const program = new Command();
 
-let currentCommand = program;
+let currentCommand: Command;
 
 program.hook("preAction", (_, actionCommand) => {
   currentCommand = actionCommand;
@@ -25,10 +24,10 @@ program
 /**
  * release
  *
- * releaseasy
- * releaseasy release
+ * releaseasy [release]
  */
-const releaseCommand = new Command("release")
+program
+  .command("release", { isDefault: true })
   .description("Release Package")
   .option("-C, --cwd <path>", "Run the release process in the specified directory")
   .option("-d, --dry-run", "Simulate release without applying changes.", false)
@@ -40,60 +39,49 @@ const releaseCommand = new Command("release")
       return previous + 1;
     },
     CONSTANTS.LOG_LEVEL.NORMAL,
-  );
+  )
+  .action(async (options: InlineConfig) => {
+    const { release } = await import("./release.ts");
 
-releaseCommand.action(async (options: InlineConfig) => {
-  const { release } = await import("./release.ts");
-
-  const resolvedOptions = await resolveConfig(options);
-
-  await release(resolvedOptions);
-});
-
-program.addCommand(releaseCommand, {
-  isDefault: true,
-});
+    await release(options);
+  });
 
 /**
  * init
  *
  * releaseasy init
  */
-const initCommand = new Command("init")
+program
+  .command("init")
   .description("Initialize releaseasy configuration")
   .option("-C, --cwd <path>", "Initialize configuration in the specified directory")
-  .option("-f, --force", "Overwrite existing configuration", false);
+  .option("-f, --force", "Overwrite existing configuration", false)
+  .action(async (options) => {
+    const { init } = await import("./init.ts");
 
-initCommand.action(async (options) => {
-  const { init } = await import("./init.ts");
-
-  await init(options);
-});
-
-program.addCommand(initCommand);
+    await init(options);
+  });
 
 /**
  * changelog
  *
  * releaseasy changelog [git-cliff args...]
  */
-const changelogCommand = new Command("changelog")
+program
+  .command("changelog")
   .description("Run git-cliff")
   .helpOption(false)
   .allowUnknownOption(true)
-  .allowExcessArguments(true);
+  .allowExcessArguments(true)
+  .action(async (_, command) => {
+    const { runGitCliff } = await import("./utils/index.ts");
 
-changelogCommand.action(async (_, command) => {
-  const { runGitCliff } = await import("./utils/index.js");
+    const result = await runGitCliff(command.args, {
+      throwOnError: false,
+    });
 
-  const result = await runGitCliff(command.args, {
-    throwOnError: false,
+    process.exit(result.exitCode ?? 0);
   });
-
-  process.exit(result.exitCode ?? 0);
-});
-
-program.addCommand(changelogCommand);
 
 async function runCLI() {
   try {

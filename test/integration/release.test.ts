@@ -41,7 +41,6 @@ describe("release integration", () => {
 
   beforeEach(async () => {
     dir = await mkdtemp(path.join(os.tmpdir(), "release-cli-test-"));
-    console.log(dir);
 
     prompts.select.mockReset();
     prompts.input.mockReset();

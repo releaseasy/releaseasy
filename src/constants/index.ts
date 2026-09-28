@@ -1,8 +1,19 @@
+import type { ResolvedOptions } from "../config/types.ts";
+
 const CLI_NAME = "releaseasy";
 
 const CLIFF_FILE = "cliff.toml";
 
+const LOG_LEVEL = {
+  NORMAL: 0,
+  VERBOSE: 1,
+  DEBUG: 2,
+} as const;
+
 const DEFAULTS = {
+  cwd: process.cwd(),
+  dryRun: false,
+  verbose: LOG_LEVEL.NORMAL,
   increments: ["patch", "minor", "major"],
   distTags: ["latest", "next"],
   git: {
@@ -17,13 +28,9 @@ const DEFAULTS = {
       args: "--tag ${version}",
     },
   },
-};
+} satisfies ResolvedOptions;
 
-const LOG_LEVEL = {
-  NORMAL: 0,
-  VERBOSE: 1,
-  DEBUG: 2,
-};
+export type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 
 const CONFIG_FORMAT_CHOICES = [
   {

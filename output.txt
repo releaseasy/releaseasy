@@ -1,12 +1,14 @@
-===== src\cli.js =====
+===== src\cli.ts =====
 
 #!/usr/bin/env node
 
 import { Command } from "commander";
+
 import pkg from "../package.json" with { type: "json" };
-import { handleError } from "./handleError.js";
-import { resolveConfig } from "./config/index.js";
-import CONSTANTS from "./constants/index.js";
+import { resolveConfig } from "./config/index.ts";
+import { type InlineConfig } from "./config/types.ts";
+import CONSTANTS from "./constants/index.ts";
+import { handleError } from "./handleError.ts";
 
 const program = new Command();
 
@@ -42,8 +44,8 @@ const releaseCommand = new Command("release")
     CONSTANTS.LOG_LEVEL.NORMAL,
   );
 
-releaseCommand.action(async (options) => {
-  const { release } = await import("./release.js");
+releaseCommand.action(async (options: InlineConfig) => {
+  const { release } = await import("./release.ts");
 
   const resolvedOptions = await resolveConfig(options);
 
@@ -65,7 +67,7 @@ const initCommand = new Command("init")
   .option("-f, --force", "Overwrite existing configuration", false);
 
 initCommand.action(async (options) => {
-  const { init } = await import("./init.js");
+  const { init } = await import("./init.ts");
 
   await init(options);
 });
@@ -100,7 +102,7 @@ async function runCLI() {
     await program.parseAsync(process.argv);
   } catch (err) {
     handleError(err, {
-      command: currentCommand,
+      verbose: currentCommand.opts().verbose,
     });
   }
 }
@@ -109,15 +111,17 @@ await runCLI();
 
 
 
-===== src\config\index.js =====
+===== src\config\index.ts =====
 
 import { resolve } from "node:path";
-import CONSTANTS from "../constants/index.js";
-import { defu } from "../utils/index.js";
-import { loadConfig } from "./load.js";
-import { validateConfig } from "./validate.js";
 
-export async function resolveConfig(inlineConfig) {
+import CONSTANTS from "../constants/index.ts";
+import { defu } from "../utils/index.ts";
+import { loadConfig } from "./load.ts";
+import type { InlineConfig, ResolvedOptions } from "./types.ts";
+import { validateConfig } from "./validate.ts";
+
+export async function resolveConfig(inlineConfig: InlineConfig): Promise<ResolvedOptions> {
   inlineConfig = normalizeInlineOptions(inlineConfig);
 
   const { config, ...inlineOptions } = inlineConfig;
@@ -127,7 +131,7 @@ export async function resolveConfig(inlineConfig) {
   return validateConfig(resolvedConfig);
 }
 
-function normalizeInlineOptions(options) {
+function normalizeInlineOptions(options: InlineConfig) {
   return {
     ...options,
     cwd: resolve(options.cwd ?? process.cwd()),
@@ -136,27 +140,33 @@ function normalizeInlineOptions(options) {
 
 
 
-===== src\config\load.js =====
+===== src\config\load.ts =====
 
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
+import type { Loader } from "lilconfig";
 import { lilconfig } from "lilconfig";
-import CONSTANTS from "../constants/index.js";
 
-export async function loadConfig(filepath, cwd) {
+import CONSTANTS from "../constants/index.ts";
+
+const loadTS: Loader = async (filepath) => {
+  const mod = await import(pathToFileURL(filepath).href);
+
+  return mod.default ?? mod;
+};
+
+const CONFIG_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts", ".json"] as const;
+const CONFIG_LOADERS = {
+  ".ts": loadTS,
+  ".mts": loadTS,
+  ".cts": loadTS,
+} satisfies Record<string, Loader>;
+
+export async function loadConfig(filepath?: string, cwd = process.cwd()) {
   const explorer = lilconfig(CONSTANTS.CLI_NAME, {
-    loaders: {
-      ".mts": loadTS,
-      ".ts": loadTS,
-      ".cts": loadTS,
-    },
-    searchPlaces: [
-      `${CONSTANTS.CLI_NAME}.config.js`,
-      `${CONSTANTS.CLI_NAME}.config.mjs`,
-      `${CONSTANTS.CLI_NAME}.config.cjs`,
-      `${CONSTANTS.CLI_NAME}.config.ts`,
-      `${CONSTANTS.CLI_NAME}.config.mts`,
-      `${CONSTANTS.CLI_NAME}.config.cts`,
-      `${CONSTANTS.CLI_NAME}.config.json`,
-    ],
+    loaders: CONFIG_LOADERS,
+    searchPlaces: CONFIG_EXTENSIONS.map((ext) => `${CONSTANTS.CLI_NAME}.config${ext}`),
   });
 
   const result = filepath
@@ -166,28 +176,132 @@ export async function loadConfig(filepath, cwd) {
   return result?.config ?? {};
 }
 
-async function loadTS(filepath) {
-  const { createJiti } = await import("jiti");
 
-  return createJiti(import.meta.url, {
-    interopDefault: true,
-  }).import(filepath, {
-    default: true,
-  });
+
+===== src\config\types.ts =====
+
+import type { DetectResult } from "package-manager-detector";
+import type { ReleaseType } from "semver";
+
+import type { ChangelogFormat, ConfigAction, ConfigFormat } from "../constants/index.ts";
+
+export type DistTag = "latest" | "next" | "beta" | "alpha" | "canary" | "rc" | (string & {}); // 允许自定义
+
+type ChangelogOptions = {
+  output?: string;
+  configFile?: string;
+  args?: string;
+};
+
+type StepName = "changelog" | "bump";
+
+type StepHookEvent = `before:${StepName}` | `after:${StepName}`;
+
+type LifecycleHookEvent = "before:init" | "after:release";
+
+export type HookEvent = StepHookEvent | LifecycleHookEvent;
+
+type Hooks = Partial<Record<HookEvent, string | string[]>>;
+
+// 公开的用户的api
+export interface UserConfig {
+  increments?: ReleaseType[];
+  distTags?: DistTag[];
+  git?: {
+    requireBranch?: string | string[] | RegExp | false;
+    commitMessage?: string;
+    addArgs?: string[];
+    commitArgs?: string[];
+    tagName?: string;
+    changelog?: false | ChangelogOptions;
+  };
+  hooks?: Hooks;
+}
+
+export interface InlineConfig extends UserConfig {
+  cwd?: string;
+  config?: string;
+  dryRun?: boolean;
+  verbose?: number;
+}
+
+// 内部用的选项
+export interface ResolvedOptions {
+  increments: ReleaseType[];
+  distTags: DistTag[];
+  git: {
+    requireBranch: string | string[] | RegExp | false;
+    commitMessage: string;
+    addArgs: string[];
+    commitArgs: string[];
+    tagName: string;
+    changelog: false | Required<ChangelogOptions>;
+  };
+  hooks?: Hooks;
+  cwd: string;
+  dryRun: boolean;
+  verbose: number;
+}
+
+// release 流程 运行时的上下文数据
+export interface ReleaseContext {
+  name: string;
+  version: string;
+  tagName: string;
+  distTag: DistTag;
+  commitMessage: string;
+  resolvedCwd: string;
+  resolvedCliffFile: string | undefined;
+  latestVersion: string;
+  remoteUrl: string;
+  packageJsonPath: string;
+  tagCreated: boolean;
+  initialCommitSha: string;
+  branchName: string;
+  changelog: {
+    output: string;
+  };
+}
+
+export interface InitOptions {
+  cwd?: string;
+  force?: boolean;
+}
+
+export type ResolvedInitOptions = Required<InitOptions>;
+
+export interface InitContext {
+  resolvedCwd: string;
+  packageManager: DetectResult;
+  packageJsonPath: string;
+  configFormat: ConfigFormat;
+  changelogFormat: ChangelogFormat;
+  isTypeScriptProject: boolean;
+  shouldAddScripts: boolean;
+  moduleFormat: "esm" | "commonjs";
+  configFile: string;
+  configAction: ConfigAction;
+  cliffFile: string;
 }
 
 
 
-===== src\config\validate.js =====
+===== src\config\validate.ts =====
 
 import * as v from "valibot";
+
+/** 单个路径片段：属性键，剔除了 symbol */
+type PathKey = Extract<PropertyKey, string | number>;
+
+/** 完整路径 */
+type Path = PathKey[];
 
 const configSchema = v.object({
   cwd: v.string(),
 
   dryRun: v.boolean(),
 
-  verbose: v.number([v.integer(), v.minValue(0)]),
+  verbose: v.pipe(v.number(), v.integer(), v.minValue(0)),
   /**
    * increments
    *
@@ -215,7 +329,7 @@ const configSchema = v.object({
    * 例如：
    * ["latest", "next"]
    */
-  distTags: v.optional(v.array(v.string())),
+  distTags: v.array(v.string()),
 
   git: v.object({
     /**
@@ -243,7 +357,7 @@ const configSchema = v.object({
   }),
 
   // hooks
-  hooks: v.optional(
+  hooks: v.exactOptional(
     v.record(
       v.picklist([
         "before:init",
@@ -258,18 +372,42 @@ const configSchema = v.object({
   ),
 });
 
-export function validateConfig(config) {
+/** 从 schema 自动推导的配置输出类型 */
+export type Config = v.InferOutput<typeof configSchema>;
+
+/**
+ * Valibot issue 的最小结构描述。
+ * 我们只关心 path / expected / received / issues，避免依赖 Valibot 内部复杂的联合类型。
+ */
+interface IssueLike {
+  path?: readonly { key: PathKey }[];
+  expected?: string;
+  received?: string;
+  issues?: readonly IssueLike[];
+}
+
+/** 展平后供格式化使用的 issue */
+interface FlatIssue {
+  path: Path;
+  expected: string;
+  received: string;
+}
+
+/** 验证配置，成功时返回类型化的 Config，失败时抛出格式化的错误 */
+export function validateConfig(config: unknown): Config {
   try {
     return v.parse(configSchema, config, { abortEarly: true });
   } catch (error) {
     if (error instanceof v.ValiError) {
-      throw new Error(formatConfigError(error));
+      throw new Error(formatConfigError(error as unknown as IssueLike), {
+        cause: error,
+      });
     }
     throw error;
   }
 }
 
-function formatConfigError(error) {
+function formatConfigError(error: IssueLike): string {
   const issues = flattenIssues(error);
   const issue = mergeUnionIssues(issues);
 
@@ -285,26 +423,34 @@ function formatConfigError(error) {
   ].join("\n");
 }
 
-function flattenIssues(error, parentPath = []) {
-  const result = [];
+/** 递归展平嵌套的 issues，并补全完整路径 */
+function flattenIssues(error: IssueLike, parentPath: Path = []): FlatIssue[] {
+  const result: FlatIssue[] = [];
 
-  for (const issue of error.issues) {
-    const currentPath = [...parentPath, ...(issue.path ?? []).map((item) => item.key)];
+  for (const issue of error.issues ?? []) {
+    const currentPath: Path = [...parentPath, ...(issue.path ?? []).map((item) => item.key)];
 
-    if (issue.issues) {
+    if (issue.issues && issue.issues.length > 0) {
       result.push(...flattenIssues(issue, currentPath));
     } else {
       result.push({
-        ...issue,
         path: currentPath,
+        expected: issue.expected ?? "unknown",
+        received: issue.received ?? "unknown",
       });
     }
   }
+
   return result;
 }
 
-function mergeUnionIssues(issues) {
+/** 合并同路径的 union 校验错误，将 expected 用 | 连接 */
+function mergeUnionIssues(issues: FlatIssue[]): FlatIssue {
   const issue = issues.at(-1);
+
+  if (!issue) {
+    throw new Error("No issues to merge");
+  }
 
   const matched = issues.filter(
     (item) => item.path.join(".") === issue.path.join(".") && item.received === issue.received,
@@ -322,11 +468,11 @@ function mergeUnionIssues(issues) {
 
 
 
-===== src\constants\index.js =====
+===== src\constants\index.ts =====
 
 const CLI_NAME = "releaseasy";
 
-const VARIABLE_RE = /\$\{([^}]+)\}/g;
+const CLIFF_FILE = "cliff.toml";
 
 const DEFAULTS = {
   increments: ["patch", "minor", "major"],
@@ -339,7 +485,7 @@ const DEFAULTS = {
     tagName: "v${version}",
     changelog: {
       output: "CHANGELOG.md",
-      configFile: "cliff.toml",
+      configFile: CLIFF_FILE,
       args: "--tag ${version}",
     },
   },
@@ -350,8 +496,6 @@ const LOG_LEVEL = {
   VERBOSE: 1,
   DEBUG: 2,
 };
-
-const CLIFF_FILE = "cliff.toml";
 
 const CONFIG_FORMAT_CHOICES = [
   {
@@ -370,7 +514,7 @@ const CONFIG_FORMAT_CHOICES = [
     name: "package.json",
     value: "packageJson",
   },
-];
+] as const;
 
 const CHANGELOG_FORMAT_CHOICES = [
   {
@@ -421,23 +565,28 @@ const CHANGELOG_FORMAT_CHOICES = [
     name: "Unconventional",
     value: "unconventional",
   },
-];
+] as const;
 
 const CONFIG_ACTION = {
   CREATED: "Created",
   UPDATED: "Updated",
-};
+} as const;
 
-const DEFAULT_SCRIPTS = {
+const PKG_SCRIPTS = {
   release: CLI_NAME,
 };
 
+export type ConfigFormat = (typeof CONFIG_FORMAT_CHOICES)[number]["value"];
+
+export type ChangelogFormat = (typeof CHANGELOG_FORMAT_CHOICES)[number]["value"];
+
+export type ConfigAction = (typeof CONFIG_ACTION)[keyof typeof CONFIG_ACTION];
+
 export default {
   CONFIG_ACTION,
-  DEFAULT_SCRIPTS,
   DEFAULTS,
   CLI_NAME,
-  VARIABLE_RE,
+  PKG_SCRIPTS,
   LOG_LEVEL,
   CONFIG_FORMAT_CHOICES,
   CHANGELOG_FORMAT_CHOICES,
@@ -446,51 +595,50 @@ export default {
 
 
 
-===== src\handleError.js =====
+===== src\handleError.ts =====
 
-import { logger } from "./utils/index.js";
-import CONSTANTS from "./constants/index.js";
+import CONSTANTS from "./constants/index.ts";
+import { logger } from "./utils/index.ts";
 
-export function handleError(err, options = {}) {
+export interface HandleErrorOptions {
+  verbose?: number;
+}
+
+export function handleError(err: unknown, options: HandleErrorOptions = {}): never {
   if (!err) {
     process.exit(0);
   }
-  if (err instanceof CancelledError || err.name === "ExitPromptError") {
+
+  if (err instanceof CancelledError || isExitPromptError(err)) {
     logger.warn(err.message);
     process.exit(0);
-  } else if (err instanceof Error) {
-    const commandOptions = options.command?.opts();
+  }
 
-    const { verbose } = commandOptions;
-    if (verbose === undefined) {
+  if (err instanceof Error) {
+    const { verbose } = options;
+
+    if (verbose === undefined || verbose > CONSTANTS.LOG_LEVEL.DEBUG) {
       logger.error(err);
-      return;
+    } else {
+      logger.error(err.message);
     }
-
-    if (verbose > CONSTANTS.LOG_LEVEL.DEBUG) {
-      logger.error(err);
-      return;
-    }
-
-    logger.error(err.message);
 
     process.exit(1);
   }
+
   logger.error("Unknown error", err);
   process.exit(1);
 }
 
-/**
- * 取消当前操作
- *
- * @param {string} [message]
- * @throws {CancelledError}
- */
-export function cancel(message) {
+function isExitPromptError(err: unknown): err is Error {
+  return err instanceof Error && err.name === "ExitPromptError";
+}
+
+export function cancel(message?: string): never {
   throw new CancelledError(message);
 }
 
-class CancelledError extends Error {
+export class CancelledError extends Error {
   constructor(message = "Release cancelled by user") {
     super(message);
     this.name = "CancelledError";
@@ -499,88 +647,39 @@ class CancelledError extends Error {
 
 
 
-===== src\index.d.ts =====
+===== src\index.ts =====
 
-import type { ReleaseType } from "semver";
+import type { UserConfig } from "./config/types.ts";
 
-type DistTag = "latest" | "next" | "beta" | "alpha" | "canary" | "rc" | (string & {}); // 允许自定义
-
-type ChangelogOptions = {
-  output?: string;
-  configFile?: string;
-  args?: string;
-};
-
-type StepName = "changelog" | "bump";
-
-type StepHookEvent = `before:${StepName}` | `after:${StepName}`;
-
-type LifecycleHookEvent = "before:init" | "after:release";
-
-type HookEvent = StepHookEvent | LifecycleHookEvent;
-
-type Hooks = Partial<Record<HookEvent, string | string[]>>;
-
-export interface UserConfig {
-  increments?: ReleaseType[];
-  distTags?: DistTag[];
-  git?: {
-    requireBranch?: string | string[] | RegExp | false;
-    commitMessage?: string;
-    addArgs?: string[];
-    commitArgs?: string[];
-    tagName?: string;
-    changelog?: false | ChangelogOptions;
-  };
-  hooks?: Hooks;
-}
-
-export declare function defineConfig(config: UserConfig): UserConfig;
+export const defineConfig = (config: UserConfig) => config;
 
 
 
-===== src\index.js =====
-
-export const defineConfig = (config) => config;
-
-
-
-===== src\init.js =====
+===== src\init.ts =====
 
 import ansis from "ansis";
 
-import CONSTANTS from "./constants/index.js";
-import {
-  createContext,
-  promptInit,
-  install,
-  generateFiles,
-  addScripts,
-  dump,
-} from "./init/index.js";
-import { logger, blank } from "./utils/index.js";
+import type { InitOptions, ResolvedInitOptions } from "./config/types.ts";
+import CONSTANTS from "./constants/index.ts";
+import { createContext, promptInit, generateFiles, addScripts, dump } from "./init/index.ts";
+import { logger, blank } from "./utils/index.ts";
 
-export async function init(inlineOps = {}) {
-  const options = {
-    cwd: inlineOps.cwd ?? process.cwd(),
-    force: inlineOps.force ?? false,
+export async function init(options: InitOptions = {}) {
+  const resolvedOptions: ResolvedInitOptions = {
+    cwd: options.cwd ?? process.cwd(),
+    force: options.force ?? false,
   };
   blank();
   logger.log(`${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}`);
   blank();
   // 获取基本的上下文
-  const context = await createContext(options);
+  const context = await createContext(resolvedOptions);
 
   // 交互式配置
   await promptInit(context);
 
-  // 下载jiti
-  if (context.configFormat === "typescript") {
-    await install(context);
-  }
-
   // 生成配置文件
-  await generateFiles(options, context);
+  await generateFiles(resolvedOptions, context);
 
   // 添加脚本到package.json
   await addScripts(context);
@@ -591,10 +690,11 @@ export async function init(inlineOps = {}) {
 
 
 
-===== src\init\createContext.js =====
+===== src\init\createContext.ts =====
 
 import path from "node:path";
-import { detect } from "package-manager-detector/detect";
+
+import type { InitContext, ResolvedInitOptions } from "../config/types.ts";
 import {
   exists,
   assertDirectory,
@@ -602,9 +702,9 @@ import {
   readPackageJSON,
   isPackageInstalled,
   detectPackageManager,
-} from "../utils/index.js";
+} from "../utils/index.ts";
 
-export async function createContext(options) {
+export async function createContext(options: ResolvedInitOptions): Promise<InitContext> {
   const { cwd } = options;
   const resolvedCwd = await assertDirectory(cwd);
 
@@ -614,40 +714,43 @@ export async function createContext(options) {
 
   const packageJson = await readPackageJSON(packageJsonPath);
 
-  return {
-    cwd: resolvedCwd,
-    packageManager,
-    packageJsonPath,
-    isTypeScriptProject: await isTypeScriptProject(resolvedCwd),
-    moduleFormat: packageJson.type === "module" ? "esm" : "commonjs",
-  };
+  const context: InitContext = Object.create(null);
+
+  context.resolvedCwd = resolvedCwd;
+  context.packageManager = packageManager;
+  context.packageJsonPath = packageJsonPath;
+  context.isTypeScriptProject = await isTypeScriptProject(resolvedCwd);
+  context.moduleFormat = packageJson.type === "module" ? "esm" : "commonjs";
+  return context;
 }
 
-async function isTypeScriptProject(cwd) {
+async function isTypeScriptProject(cwd: string) {
   return (await exists(path.join(cwd, "tsconfig.json"))) || isPackageInstalled(cwd, "typescript");
 }
 
 
 
-===== src\init\dump.js =====
+===== src\init\dump.ts =====
 
 import ansis from "ansis";
-import { hasScripts, logger, formatCommand } from "../utils/index.js";
-import CONSTANTS from "../constants/index.js";
-import { resolveCommand } from "package-manager-detector/commands";
+import type { ResolvedCommand } from "package-manager-detector";
 
-export async function dump(context) {
+import type { InitContext } from "../config/types.ts";
+import CONSTANTS from "../constants/index.ts";
+import { hasScripts, logger, formatCommand, resolveCommandOrThrow } from "../utils/index.ts";
+
+export async function dump(context: InitContext) {
   const { configFile, cliffFile, packageManager, packageJsonPath, changelogFormat, configAction } =
     context;
 
   logger.success(`${configAction} ${ansis.yellow(configFile)}`);
   logger.success(`Created ${ansis.yellow(cliffFile)} ${ansis.gray(`(${changelogFormat})`)}`);
 
-  let command;
-  if (await hasScripts(packageJsonPath, CONSTANTS.DEFAULT_SCRIPTS)) {
-    command = resolveCommand(packageManager.agent, "run", ["release"]);
+  let command: ResolvedCommand;
+  if (await hasScripts(packageJsonPath, CONSTANTS.PKG_SCRIPTS)) {
+    command = resolveCommandOrThrow(packageManager.agent, "run", ["release"]);
   } else {
-    command = resolveCommand(packageManager.agent, "execute-local", [CONSTANTS.CLI_NAME]);
+    command = resolveCommandOrThrow(packageManager.agent, "execute-local", [CONSTANTS.CLI_NAME]);
   }
 
   logger.log(`
@@ -659,26 +762,37 @@ export async function dump(context) {
 
 
 
-===== src\init\generate.js =====
+===== src\init\generate.ts =====
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { exists, runGitCliff, updatePackageJSON } from "../utils/index.js";
-import CONSTANTS from "../constants/index.js";
+
 import ansis from "ansis";
+
 import packageJson from "../../package.json" with { type: "json" };
-import jsonConfig from "../init/templates/releaseasy.config.json" with { type: "json" };
+import CONSTANTS, { type ConfigAction } from "../constants/index.ts";
+import configJson from "../init/templates/releaseasy.config.json" with { type: "json" };
+import {
+  exists,
+  readPackageJSON,
+  runGitCliff,
+  updatePackageJSON,
+  writePackageJSON,
+} from "../utils/index.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TEMPLATE_DIR = path.join(__dirname, "templates");
+import type { InitContext, ResolvedInitOptions } from "../config/types.ts";
 
-export async function generateFiles(options, context) {
-  const { changelogFormat, cwd, configFormat, packageJsonPath } = context;
+export async function generateFiles(options: ResolvedInitOptions, context: InitContext) {
+  const { changelogFormat, resolvedCwd, configFormat, packageJsonPath } = context;
   const { force } = options;
 
-  let configFile, configAction;
+  let configFile: string;
+  let configAction: ConfigAction;
+
   if (configFormat === "packageJson") {
     configFile = "package.json";
     configAction = CONSTANTS.CONFIG_ACTION.UPDATED;
@@ -694,13 +808,13 @@ export async function generateFiles(options, context) {
       throw new Error(`Template not found: ${configTemplate}`);
     }
 
-    const configTarget = path.join(cwd, configFile);
-    const cliffTarget = path.join(cwd, CONSTANTS.CLIFF_FILE);
+    const configTarget = path.join(resolvedCwd, configFile);
+    const cliffTarget = path.join(resolvedCwd, CONSTANTS.CLIFF_FILE);
 
     await assertCanWrite(configTarget, force);
     await assertCanWrite(cliffTarget, force);
 
-    await writeConfigFile(configTemplate, configTarget, context);
+    await writeConfigFile(configTemplate, configTarget);
   }
 
   // 调用命令生成git-cliff的配置文件
@@ -719,7 +833,6 @@ export async function generateFiles(options, context) {
     throw new Error(`Failed to generate ${CONSTANTS.CLIFF_FILE}.`, { cause: error });
   }
 
-  // 保存到上下文
   Object.assign(context, {
     configFile,
     configAction,
@@ -727,20 +840,19 @@ export async function generateFiles(options, context) {
   });
 }
 
-async function generatePackageJsonConfig(packageJsonPath, force) {
-  await updatePackageJSON(packageJsonPath, (packageJson) => {
-    if (packageJson[CONSTANTS.CLI_NAME] && !force) {
+async function generatePackageJsonConfig(packageJsonPath: string, force: boolean) {
+  await updatePackageJSON(packageJsonPath, (pkg) => {
+    if (pkg[CONSTANTS.CLI_NAME] && !force) {
       throw new Error(
         `Field ${ansis.yellow(CONSTANTS.CLI_NAME)} already exists in package.json. ` +
           `Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
       );
     }
-
-    packageJson[[CONSTANTS.CLI_NAME]] = jsonConfig;
+    pkg[CONSTANTS.CLI_NAME] = configJson;
   });
 }
 
-async function assertCanWrite(file, force) {
+async function assertCanWrite(file: string, force: boolean) {
   if (!force && (await exists(file))) {
     throw new Error(
       `File already exists: ${ansis.yellow(path.basename(file))}. Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
@@ -748,7 +860,7 @@ async function assertCanWrite(file, force) {
   }
 }
 
-function resolveConfigExtension(context) {
+function resolveConfigExtension(context: InitContext) {
   const { configFormat, moduleFormat } = context;
 
   if (configFormat === "json") {
@@ -766,93 +878,47 @@ function resolveConfigExtension(context) {
   throw new Error(`Unsupported config format: ${configFormat}`);
 }
 
-async function writeConfigFile(template, target) {
+async function writeConfigFile(template: string, target: string) {
   if (path.extname(template) === ".json") {
-    return writeJsonConfig(template, target);
-  }
+    const config = readPackageJSON(template);
 
+    const output = {
+      $schema: `https://cdn.jsdelivr.net/npm/releaseasy@${packageJson.version}/schema/releaseasy.json`,
+      ...config,
+    };
+    return await writePackageJSON(target, output);
+  }
   await fs.copyFile(template, target);
 }
 
-async function writeJsonConfig(template, target) {
-  const content = await fs.readFile(template, "utf8");
-  const config = JSON.parse(content);
 
-  const output = {
-    $schema: `https://cdn.jsdelivr.net/npm/releaseasy@${packageJson.version}/schema/releaseasy.json`,
-    ...config,
-  };
 
-  await fs.writeFile(target, JSON.stringify(output, null, 2) + "\n", "utf8");
-}
+===== src\init\index.ts =====
+
+export * from "./createContext.ts";
+export * from "./generate.ts";
+export * from "./package.ts";
+export * from "./prompt.ts";
+export * from "./dump.ts";
 
 
 
-===== src\init\index.js =====
+===== src\init\package.ts =====
 
-export * from "./createContext.js";
-export * from "./generate.js";
-export * from "./install.js";
-export * from "./package.js";
-export * from "./prompt.js";
-export * from "./dump.js";
+import type { InitContext } from "../config/types.ts";
+import CONSTANTS from "../constants/index.ts";
+import { readPackageJSON, writePackageJSON } from "../utils/index.ts";
 
-
-
-===== src\init\install.js =====
-
-import { x } from "tinyexec";
-import { confirm } from "@inquirer/prompts";
-import { resolveCommand } from "package-manager-detector/commands";
-import { isPackageInstalled } from "../utils/index.js";
-
-export async function install(context) {
-  const { cwd, packageManager } = context;
-  // 已经安装，直接返回
-  if (isPackageInstalled(cwd, "jiti")) {
-    return;
-  }
-
-  const shouldInstall = await confirm({
-    message: "TypeScript configuration requires jiti, but it is not installed. Install it now?",
-    default: true,
-  });
-
-  // 用户拒绝安装
-  if (!shouldInstall) {
-    return;
-  }
-
-  const { command, args } = resolveCommand(packageManager.agent, "add", ["-D", "jiti"]);
-
-  await x(command, args, {
-    throwOnError: true,
-    nodeOptions: {
-      cwd,
-      stdio: "inherit",
-    },
-  });
-}
-
-
-
-===== src\init\package.js =====
-
-import fs from "node:fs/promises";
-import path from "node:path";
-import CONSTANTS from "../constants/index.js";
-import { hasScripts, readPackageJSON, writePackageJSON } from "../utils/index.js";
-
-export async function addScripts(context) {
-  const { packageJsonPath, addScripts } = context;
+export async function addScripts(context: InitContext) {
+  const { packageJsonPath, shouldAddScripts } = context;
 
   // 如果拒绝就直接返回
-  if (!addScripts) return;
+  if (!shouldAddScripts) return;
 
   const packageJson = await readPackageJSON(packageJsonPath);
   const scripts = packageJson.scripts ?? {};
 
-  const conflicts = Object.keys(CONSTANTS.DEFAULT_SCRIPTS).filter((name) => name in scripts);
+  const conflicts = Object.keys(CONSTANTS.PKG_SCRIPTS).filter((name) => name in scripts);
 
   if (conflicts.length > 0) {
     return;
@@ -860,42 +926,38 @@ export async function addScripts(context) {
 
   packageJson.scripts = {
     ...scripts,
-    ...CONSTANTS.DEFAULT_SCRIPTS,
+    ...CONSTANTS.PKG_SCRIPTS,
   };
 
   // 写入pkg.json
-  writePackageJSON(packageJsonPath, packageJson);
+  await writePackageJSON(packageJsonPath, packageJson);
 }
 
 
 
-===== src\init\prompt.js =====
+===== src\init\prompt.ts =====
 
 import { select, confirm } from "@inquirer/prompts";
-import CONSTANTS from "../constants/index.js";
 
-export async function promptInit(context) {
-  const configFormat = await select({
+import type { InitContext } from "../config/types.ts";
+import CONSTANTS from "../constants/index.ts";
+
+export async function promptInit(context: InitContext) {
+  context.configFormat = await select({
     message: "Which config format would you like?",
     default: context.isTypeScriptProject ? "typescript" : "javascript",
     choices: CONSTANTS.CONFIG_FORMAT_CHOICES,
   });
 
-  const changelogFormat = await select({
+  context.changelogFormat = await select({
     message: "Which changelog format?",
     default: "default",
     choices: CONSTANTS.CHANGELOG_FORMAT_CHOICES,
   });
 
-  const addScripts = await confirm({
+  context.shouldAddScripts = await confirm({
     message: "Add releaseasy npm scripts to package.json?",
     default: true,
-  });
-
-  Object.assign(context, {
-    configFormat,
-    changelogFormat,
-    addScripts,
   });
 }
 
@@ -987,8 +1049,11 @@ export default {
 
 
 
-===== src\release.js =====
+===== src\release.ts =====
 
+import ansis from "ansis";
+
+import type { ResolvedOptions } from "./config/types.ts";
 import {
   createContext,
   selectVersion,
@@ -998,19 +1063,24 @@ import {
   bump,
   summary,
   git,
-} from "./release/index.js";
+} from "./release/index.ts";
 import {
   formatDuration,
-  getCurrentCommitSha,
   rollback,
   logger,
   runSideEffect,
   runHook,
-} from "./utils/index.js";
-import ansis from "ansis";
+  isChangelogEnabled,
+  clearScreen,
+} from "./utils/index.ts";
+import type { ExcludeAt } from "./utils/types.ts";
 
-export async function release(options) {
+export type ChangelogEnabledOptions = ExcludeAt<ResolvedOptions, "git.changelog", false>;
+
+export async function release(options: ResolvedOptions) {
   const start = performance.now();
+
+  clearScreen();
 
   const context = await createContext(options);
 
@@ -1019,10 +1089,10 @@ export async function release(options) {
     await selectVersion(options, context);
     await selectTag(options, context);
 
-    if (options.git.changelog !== false) {
+    if (isChangelogEnabled(options)) {
       await runSideEffect(options, "Generate changelog", async () => {
         await genChangelog(options, context);
-        await confirmChangelog(options, context);
+        await confirmChangelog();
       });
     }
 
@@ -1046,11 +1116,12 @@ export async function release(options) {
 
 
 
-===== src\release\bump.js =====
+===== src\release\bump.ts =====
 
-import { readPackageJSON, writePackageJSON, runHook } from "../utils/index.js";
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import { readPackageJSON, writePackageJSON, runHook } from "../utils/index.ts";
 
-export async function bump(options, context) {
+export async function bump(options: ResolvedOptions, context: ReleaseContext) {
   const { version, distTag, packageJsonPath } = context;
 
   await runHook(options, "before:bump", context);
@@ -1073,12 +1144,13 @@ export async function bump(options, context) {
 
 
 
-===== src\release\confirmChangelog.js =====
+===== src\release\confirmChangelog.ts =====
 
 import { confirm } from "@inquirer/prompts";
-import { cancel } from "../handleError.js";
 
-export async function confirmChangelog(options, context) {
+import { cancel } from "../handleError.ts";
+
+export async function confirmChangelog() {
   const normal = await confirm({
     message: "Changelog generated. Does it look good?",
     default: true,
@@ -1089,8 +1161,16 @@ export async function confirmChangelog(options, context) {
 
 
 
-===== src\release\createContext.js =====
+===== src\release\createContext.ts =====
 
+import path from "node:path";
+
+import ansis from "ansis";
+import { type DetectResult } from "package-manager-detector";
+import { valid } from "semver";
+
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import CONSTANTS from "../constants/index.ts";
 import {
   isGitAvailable,
   isGitRepository,
@@ -1104,34 +1184,19 @@ import {
   detectPackageManager,
   exists,
   formatCommand,
-} from "../utils/index.js";
-import { valid } from "semver";
-import path from "node:path";
-import ansis from "ansis";
-import CONSTANTS from "../constants/index.js";
-import { resolveCommand } from "package-manager-detector/commands";
+  isChangelogEnabled,
+  resolveCommandOrThrow,
+} from "../utils/index.ts";
 
-export async function createContext(options) {
+export async function createContext(options: ResolvedOptions): Promise<ReleaseContext> {
   const { cwd, git } = options;
 
   // 判断目录
   const resolvedCwd = await assertDirectory(cwd);
-  const packageJsonPath = await resolvePackageJSON(cwd);
+  const packageJsonPath = await resolvePackageJSON(resolvedCwd);
   const packageManager = await detectPackageManager(resolvedCwd);
 
-  if (!(await isGitAvailable(options))) {
-    throw new Error(
-      "Git is not installed or not available in your PATH. Please install Git to continue.",
-    );
-  }
-
-  if (!(await isGitRepository(options))) {
-    throw new Error("Current working directory is not a git repository.");
-  }
-
-  if (!(await isWorkingTreeClean(options))) {
-    throw new Error("Working directory is not clean. Please commit your changes.");
-  }
+  await assertGitReady(options);
 
   const remoteUrl = await getRemoteUrl(options);
 
@@ -1151,19 +1216,9 @@ export async function createContext(options) {
     throw new Error(`package.json "version" must be a valid semver version.`);
   }
 
-  let initialCommitSha;
-  try {
-    initialCommitSha = await getCurrentCommitSha(options);
-  } catch (error) {
-    throw new Error("Failed to determine current Git commit.");
-  }
+  const initialCommitSha = await getCurrentCommitSha(options);
 
-  let branchName;
-  try {
-    branchName = await getCurrentBranch(options);
-  } catch {
-    throw new Error("Failed to determine current Git branch.");
-  }
+  const branchName = await getCurrentBranch(options);
 
   if (!matchBranch(git.requireBranch, branchName)) {
     throw new Error(
@@ -1171,47 +1226,75 @@ export async function createContext(options) {
     );
   }
 
-  let resolvedCliffFile;
   // 提前抛出配置缺少的错误,用户体验更好
-  if (git.changelog !== false) {
-    // 判断配置文件是否存在
-    resolvedCliffFile = path.join(resolvedCwd, git.changelog.configFile);
+  const resolvedCliffFile = await resolveCliffFile(options, resolvedCwd, packageManager);
 
-    const initCommand = resolveCommand(packageManager.agent, "execute-local", [
-      CONSTANTS.CLI_NAME,
-      "init",
-    ]);
+  const context: ReleaseContext = Object.create(null);
 
-    const changelogCommand = resolveCommand(packageManager.agent, "execute-local", [
-      CONSTANTS.CLI_NAME,
-      "changelog",
-      "--init",
-      "[template]",
-    ]);
+  context.name = name;
+  context.resolvedCwd = resolvedCwd;
+  context.resolvedCliffFile = resolvedCliffFile;
+  context.initialCommitSha = initialCommitSha;
+  context.latestVersion = version;
+  context.remoteUrl = remoteUrl;
+  context.packageJsonPath = packageJsonPath;
+  context.tagCreated = false;
+  context.branchName = branchName;
 
-    if (!(await exists(resolvedCliffFile))) {
-      throw Error(
-        `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +
-          `Run "${ansis.cyan(formatCommand(initCommand))}" to initialize the configuration.\n` +
-          `or "${ansis.cyan(formatCommand(changelogCommand))}" to initialize the Git-cliff configuration.`,
-      );
-    }
-  }
-
-  return {
-    resolvedCwd,
-    resolvedCliffFile,
-    name,
-    latestVersion: version,
-    remoteUrl,
-    packageJsonPath,
-    tagCreated: false,
-    initialCommitSha,
-    branchName,
-  };
+  return context;
 }
 
-function matchBranch(requireBranch, inputBranch) {
+async function assertGitReady(options: ResolvedOptions) {
+  if (!(await isGitAvailable(options))) {
+    throw new Error(
+      "Git is not installed or not available in your PATH. Please install Git to continue.",
+    );
+  }
+
+  if (!(await isGitRepository(options))) {
+    throw new Error("Current working directory is not a git repository.");
+  }
+
+  if (!(await isWorkingTreeClean(options))) {
+    throw new Error("Working directory is not clean. Please commit your changes.");
+  }
+}
+
+export async function resolveCliffFile(
+  options: ResolvedOptions,
+  cwd: string,
+  packageManager: DetectResult,
+) {
+  if (!isChangelogEnabled(options)) {
+    return undefined;
+  }
+
+  const resolvedCliffFile = path.join(cwd, options.git.changelog.configFile);
+
+  const initCommand = resolveCommandOrThrow(packageManager.agent, "execute-local", [
+    CONSTANTS.CLI_NAME,
+    "init",
+  ]);
+
+  const changelogCommand = resolveCommandOrThrow(packageManager.agent, "execute-local", [
+    CONSTANTS.CLI_NAME,
+    "changelog",
+    "--init",
+    "[template]",
+  ]);
+
+  if (!(await exists(resolvedCliffFile))) {
+    throw Error(
+      `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +
+        `Run "${ansis.cyan(formatCommand(initCommand))}" to initialize the configuration.\n` +
+        `or "${ansis.cyan(formatCommand(changelogCommand))}" to initialize the Git-cliff configuration.`,
+    );
+  }
+
+  return resolvedCliffFile;
+}
+
+function matchBranch(requireBranch: ResolvedOptions["git"]["requireBranch"], inputBranch: string) {
   if (requireBranch === false) return true;
 
   if (typeof requireBranch === "string") {
@@ -1231,13 +1314,21 @@ function matchBranch(requireBranch, inputBranch) {
 
 
 
-===== src\release\genChangelog.js =====
+===== src\release\genChangelog.ts =====
 
-import { Spinner } from "picospinner";
-import { logCommand, runGitCliff, runHook } from "../utils/index.js";
-import { isVerbose, interpolate, parseArgsStringToArgv, withSpinner } from "../utils/index.js";
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import type { ChangelogEnabledOptions } from "../release.ts";
+import {
+  isVerbose,
+  interpolate,
+  strArgv,
+  withSpinner,
+  logCommand,
+  runGitCliff,
+  runHook,
+} from "../utils/index.ts";
 
-export async function genChangelog(options, context) {
+export async function genChangelog(options: ChangelogEnabledOptions, context: ReleaseContext) {
   // 前置钩子
   await runHook(options, "before:changelog", context);
 
@@ -1262,26 +1353,24 @@ export async function genChangelog(options, context) {
   await runHook(options, "after:changelog", context);
 }
 
-async function buildGitCliffArgs(options, context) {
+async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: ReleaseContext) {
   const { args: argTemplate, output } = options.git.changelog;
 
-  const args = parseArgsStringToArgv(interpolate(argTemplate, context));
+  const args = strArgv(interpolate(argTemplate, context));
 
-  args.push("--config", context.resolvedCliffFile);
+  args.push("--config", context.resolvedCliffFile as string);
   args.push("--output", output);
   args.push(...getVerboseArgs(options));
 
   // 把ouput直接给到上下文方便复用
-  Object.assign(context, {
-    changelog: {
-      output,
-    },
-  });
+  context.changelog = {
+    output,
+  };
 
   return args;
 }
 
-function getVerboseArgs(options) {
+function getVerboseArgs(options: ResolvedOptions) {
   if (!isVerbose(options)) {
     return [];
   }
@@ -1291,11 +1380,11 @@ function getVerboseArgs(options) {
 
 
 
-===== src\release\git.js =====
+===== src\release\git.ts =====
 
-import { add, commit, tag, push, withSpinner, runSideEffect } from "../utils/index.js";
-
-export async function git(options, context) {
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import { add, commit, tag, push, withSpinner } from "../utils/index.ts";
+export async function git(options: ResolvedOptions, context: ReleaseContext) {
   await withSpinner(options, "Releasing…", async () => {
     try {
       await add(options);
@@ -1312,95 +1401,95 @@ export async function git(options, context) {
 
 
 
-===== src\release\index.js =====
+===== src\release\index.ts =====
 
-export * from "./createContext.js";
-export * from "./selectVersion.js";
-export * from "./selectTag.js";
-export * from "./genChangelog.js";
-export * from "./confirmChangelog.js";
-export * from "./bump.js";
-export * from "./summary.js";
-export * from "./git.js";
+export * from "./createContext.ts";
+export * from "./selectVersion.ts";
+export * from "./selectTag.ts";
+export * from "./genChangelog.ts";
+export * from "./confirmChangelog.ts";
+export * from "./bump.ts";
+export * from "./summary.ts";
+export * from "./git.ts";
 
 
 
-===== src\release\selectTag.js =====
+===== src\release\selectTag.ts =====
 
 import { select } from "@inquirer/prompts";
 import { prerelease } from "semver";
 
-export async function selectTag(options, context) {
+import type { DistTag, ReleaseContext, ResolvedOptions } from "../config/types.ts";
+
+export async function selectTag(options: ResolvedOptions, context: ReleaseContext): Promise<void> {
   const isPrerelease = Boolean(prerelease(context.version));
 
-  const enabled = [];
-  const disabled = [];
-
-  for (const tag of options.distTags) {
-    const item = {
+  const choices = options.distTags
+    .map((tag) => ({
       name: tag,
       value: tag,
       disabled: isPrerelease && tag === "latest",
-    };
-    (item.disabled ? disabled : enabled).push(item);
-  }
+    }))
+    .toSorted((a, b) => Number(a.disabled) - Number(b.disabled));
 
-  const choices = [...enabled, ...disabled];
-
-  const distTag = await select({
+  const distTag = await select<DistTag>({
     message: "Select npm dist-tag",
-    choices: choices,
+    choices,
+    loop: false,
   });
 
-  Object.assign(context, {
-    distTag,
-  });
+  context.distTag = distTag;
 }
 
 
 
-===== src\release\selectVersion.js =====
+===== src\release\selectVersion.ts =====
 
 import { input, select } from "@inquirer/prompts";
-import { gt, inc, prerelease, valid } from "semver";
-import { interpolate } from "../utils/index.js";
+import { gt, inc, valid, type ReleaseType } from "semver";
 
-export async function selectVersion(options, context) {
+import type { ResolvedOptions, ReleaseContext } from "../config/types.ts";
+import { interpolate } from "../utils/index.ts";
+
+// "custom" 保留字面量提示，同时允许任意版本号字符串
+type ChoiceValue = ReleaseType | "custom" | (string & {});
+
+export async function selectVersion(options: ResolvedOptions, context: ReleaseContext) {
   const { git, increments } = options;
   const { latestVersion } = context;
-  let targetVersion;
-  const isPrerelease = prerelease(latestVersion);
 
-  // 构建版本选项
-  const choices = increments.map((type) => ({
-    name: `${type} (${inc(latestVersion, type)})`,
-    value: inc(latestVersion, type),
-  }));
+  const choices = increments
+    .map((type) => {
+      const version = inc(latestVersion, type);
 
-  // 如果当前是预发布版本，插入 prerelease 选项
-  if (isPrerelease) {
-    choices.unshift({
-      name: `prerelease (${inc(latestVersion, "prerelease")})`,
-      value: inc(latestVersion, "prerelease"),
-    });
-  }
+      if (version === null) {
+        return {
+          name: `${type}`,
+          value: "",
+          disabled: true as const,
+        };
+      }
 
-  // custom 始终放最后
-  choices.push({
-    name: "custom",
-    value: "custom",
-  });
+      return {
+        name: `${type} (${version})`,
+        value: version,
+      };
+    })
+    .concat([
+      {
+        name: "custom",
+        value: "custom",
+      },
+    ]);
 
-  const release = await select({
+  let nextVersion = await select<ChoiceValue>({
     message: "Select release type",
     choices,
+    loop: false,
   });
 
-  targetVersion = release;
-
-  // 自定义版本号
-  if (release === "custom") {
-    targetVersion = await input({
+  if (nextVersion === "custom") {
+    nextVersion = await input({
       message: "Input custom version",
       default: latestVersion,
       validate(value) {
@@ -1419,25 +1508,24 @@ export async function selectVersion(options, context) {
     });
   }
 
-  // 赋值给上下文
-  context.version = targetVersion;
-
-  Object.assign(context, {
-    tagName: interpolate(git.tagName, context),
-    commitMessage: interpolate(git.commitMessage, context),
-  });
+  // 保存到上下文中
+  context.version = nextVersion;
+  context.tagName = interpolate(git.tagName, context);
+  context.commitMessage = interpolate(git.commitMessage, context);
 }
 
 
 
-===== src\release\summary.js =====
+===== src\release\summary.ts =====
 
-import ansis from "ansis";
-import { logger, blank, getWorkingTreeChanges } from "../utils/index.js";
 import { confirm } from "@inquirer/prompts";
-import { cancel } from "../handleError.js";
+import ansis from "ansis";
 
-export async function summary(options, context) {
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import { cancel } from "../handleError.ts";
+import { logger, blank, getWorkingTreeChanges } from "../utils/index.ts";
+
+export async function summary(options: ResolvedOptions, context: ReleaseContext) {
   const { version, distTag, branchName, tagName } = context;
   const data = {
     Version: version,
@@ -1464,13 +1552,13 @@ export async function summary(options, context) {
   if (!ok) cancel();
 }
 
-function renderSection(title, fn) {
+function renderSection(title: string, fn: () => void | Promise<void>) {
   blank();
   logger.log(ansis.cyan(title));
   return fn();
 }
 
-function renderKeyValue(data) {
+function renderKeyValue(data: Record<string, string>) {
   const maxKeyLength = Math.max(...Object.keys(data).map((k) => k.length));
 
   for (const [key, val] of Object.entries(data)) {
@@ -1480,12 +1568,12 @@ function renderKeyValue(data) {
 
 
 
-===== src\utils\fs.js =====
+===== src\utils\fs.ts =====
 
 import fs from "node:fs/promises";
 import path from "node:path";
 
-export async function exists(filePath) {
+export async function exists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath);
     return true;
@@ -1494,7 +1582,7 @@ export async function exists(filePath) {
   }
 }
 
-export async function isDirectory(filePath) {
+export async function isDirectory(filePath: string): Promise<boolean> {
   try {
     const stat = await fs.stat(filePath);
     return stat.isDirectory();
@@ -1503,7 +1591,7 @@ export async function isDirectory(filePath) {
   }
 }
 
-export async function assertDirectory(directory) {
+export async function assertDirectory(directory: string): Promise<string> {
   const resolvedPath = path.resolve(directory);
 
   if (!(await isDirectory(resolvedPath))) {
@@ -1513,7 +1601,7 @@ export async function assertDirectory(directory) {
   return resolvedPath;
 }
 
-export async function isFile(filePath) {
+export async function isFile(filePath: string): Promise<boolean> {
   try {
     const stat = await fs.stat(filePath);
     return stat.isFile();
@@ -1522,23 +1610,32 @@ export async function isFile(filePath) {
   }
 }
 
-export async function outputFile(filePath, data, options) {
+export async function outputFile(
+  filePath: string,
+  data: Parameters<typeof fs.writeFile>[1],
+  options?: Parameters<typeof fs.writeFile>[2],
+): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, data, options);
 }
 
 
 
-===== src\utils\git-cliff.js =====
+===== src\utils\git-cliff.ts =====
 
-import { arch as getArch, platform as getPlatform } from "os";
-import { defu } from "./helpers.js";
-import { x } from "tinyexec";
 import { createRequire } from "node:module";
+import { arch as getArch, platform as getPlatform } from "node:os";
+
+import { x, type Options, type Output } from "tinyexec";
+
+import { defu } from "./helpers.ts";
 
 const require = createRequire(import.meta.url);
 
-export async function runGitCliff(args, execOptions = {}) {
+export async function runGitCliff(
+  args: string[],
+  execOptions: Partial<Options> = {},
+): Promise<Output> {
   const bin = getExePath();
 
   return await x(
@@ -1549,7 +1646,7 @@ export async function runGitCliff(args, execOptions = {}) {
       nodeOptions: {
         stdio: "inherit",
       },
-    }),
+    } satisfies Partial<Options>),
   );
 }
 
@@ -1557,7 +1654,7 @@ function getExePath() {
   const platform = getPlatform();
   const arch = getArch();
 
-  let os = platform;
+  let os = platform as string;
   let extension = "";
 
   if (platform === "win32" || platform === "cygwin") {
@@ -1567,22 +1664,24 @@ function getExePath() {
 
   try {
     return require.resolve(`git-cliff-${os}-${arch}/bin/git-cliff${extension}`);
-  } catch (e) {
+  } catch (error) {
     throw new Error(`Couldn't find git-cliff binary inside node_modules for ${os}-${arch}`, {
-      cause: e,
+      cause: error,
     });
   }
 }
 
 
 
-===== src\utils\git.js =====
+===== src\utils\git.ts =====
 
-import { x } from "tinyexec";
-import { defu, execCommand } from "../utils/helpers.js";
+import { x, type Options } from "tinyexec";
 
-function git(options, args, execOptions = {}) {
-  return x(
+import type { ResolvedOptions, ReleaseContext } from "../config/types.ts";
+import { defu, execCommand } from "./helpers.ts";
+
+async function git(options: ResolvedOptions, args: string[], execOptions: Partial<Options> = {}) {
+  return await x(
     "git",
     args,
     defu(execOptions, {
@@ -1591,11 +1690,11 @@ function git(options, args, execOptions = {}) {
         cwd: options.cwd,
         stdio: "pipe",
       },
-    }),
+    } satisfies Partial<Options>),
   );
 }
 
-export async function isGitAvailable(options) {
+export async function isGitAvailable(options: ResolvedOptions) {
   try {
     await git(options, ["--version"]);
     return true;
@@ -1604,7 +1703,7 @@ export async function isGitAvailable(options) {
   }
 }
 
-export async function isGitRepository(options) {
+export async function isGitRepository(options: ResolvedOptions) {
   try {
     const { stdout } = await git(options, ["rev-parse", "--is-inside-work-tree"]);
 
@@ -1614,7 +1713,7 @@ export async function isGitRepository(options) {
   }
 }
 
-export async function getWorkingTreeChanges(options) {
+export async function getWorkingTreeChanges(options: ResolvedOptions) {
   return await git(options, ["status", "--porcelain"], {
     nodeOptions: {
       stdio: "inherit",
@@ -1622,13 +1721,13 @@ export async function getWorkingTreeChanges(options) {
   });
 }
 
-export async function isWorkingTreeClean(options) {
+export async function isWorkingTreeClean(options: ResolvedOptions) {
   const { stdout } = await git(options, ["status", "--porcelain"]);
 
   return stdout.trim().length === 0;
 }
 
-export async function getRemoteUrl(options) {
+export async function getRemoteUrl(options: ResolvedOptions) {
   try {
     const { stdout } = await git(options, ["remote", "get-url", "origin"]);
 
@@ -1638,18 +1737,30 @@ export async function getRemoteUrl(options) {
   }
 }
 
-export async function getCurrentBranch(options) {
-  const { stdout } = await git(options, ["symbolic-ref", "--short", "HEAD"]);
-  return stdout.trim();
+export async function getCurrentBranch(options: ResolvedOptions): Promise<string> {
+  try {
+    const { stdout } = await git(options, ["symbolic-ref", "--short", "HEAD"]);
+
+    return stdout.trim();
+  } catch (error) {
+    throw new Error("Failed to determine current Git branch.", {
+      cause: error,
+    });
+  }
 }
 
-export async function getCurrentCommitSha(options) {
-  const { stdout } = await git(options, ["rev-parse", "HEAD"]);
-
-  return stdout.trim();
+export async function getCurrentCommitSha(options: ResolvedOptions) {
+  try {
+    const { stdout } = await git(options, ["rev-parse", "HEAD"]);
+    return stdout.trim();
+  } catch (error) {
+    throw new Error("Failed to determine current Git commit.", {
+      cause: error,
+    });
+  }
 }
 
-async function deleteTag(options, context) {
+async function deleteTag(options: ResolvedOptions, context: ReleaseContext) {
   const { tagCreated, tagName } = context;
 
   if (!tagCreated) {
@@ -1658,7 +1769,7 @@ async function deleteTag(options, context) {
   await git(options, ["tag", "-d", tagName]);
 }
 
-async function reset(options, context) {
+async function reset(options: ResolvedOptions, context: ReleaseContext) {
   const { initialCommitSha } = context;
   if (!initialCommitSha) {
     return;
@@ -1670,16 +1781,16 @@ async function reset(options, context) {
   await git(options, ["clean", "-fd"]);
 }
 
-export async function rollback(options, context) {
+export async function rollback(options: ResolvedOptions, context: ReleaseContext) {
   await deleteTag(options, context);
   await reset(options, context);
 }
 
-export async function add(options) {
+export async function add(options: ResolvedOptions) {
   await execCommand("git", ["add", ...options.git.addArgs], options);
 }
 
-export async function commit(options, context) {
+export async function commit(options: ResolvedOptions, context: ReleaseContext) {
   await execCommand(
     "git",
     ["commit", ...options.git.commitArgs, "-m", context.commitMessage],
@@ -1687,31 +1798,34 @@ export async function commit(options, context) {
   );
 }
 
-export async function tag(options, context) {
+export async function tag(options: ResolvedOptions, context: ReleaseContext) {
   await execCommand("git", ["tag", "-f", context.tagName], options);
 
   context.tagCreated = true;
 }
 
-export async function push(options, context) {
+export async function push(options: ResolvedOptions, context: ReleaseContext) {
   await execCommand("git", ["push", "origin", "HEAD", `refs/tags/${context.tagName}`], options);
 }
 
 
 
-===== src\utils\helpers.js =====
+===== src\utils\helpers.ts =====
 
-import { createConsola } from "consola";
-import path from "node:path";
-import { createDefu } from "defu";
-import { createRequire } from "node:module";
-import CONSTANTS from "../constants/index.js";
 import ansis from "ansis";
-import { readPackageJSON } from "./pkg.js";
-import { interpolate } from "./interpolate.js";
-import { createSpinner } from "./spinner.js";
-import { x } from "tinyexec";
-import { detect } from "package-manager-detector";
+import { createConsola } from "consola";
+import { createDefu } from "defu";
+import { type ResolvedCommand, type Agent, type Command, detect } from "package-manager-detector";
+import { resolveCommand } from "package-manager-detector/commands";
+import { x, type Options } from "tinyexec";
+
+import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
+import CONSTANTS from "../constants/index.ts";
+import type { ChangelogEnabledOptions } from "../release.ts";
+import { interpolate } from "./interpolate.ts";
+import { readPackageJSON } from "./pkg.ts";
+import { createSpinner } from "./spinner.ts";
+import type { Awaitable } from "./types.ts";
 
 export const logger = createConsola();
 
@@ -1719,7 +1833,11 @@ export const loggerWithTag = logger.withDefaults({
   tag: CONSTANTS.CLI_NAME,
 });
 
-export async function runSideEffect(options, description, action) {
+export async function runSideEffect<T>(
+  options: ResolvedOptions,
+  description: string,
+  action: () => Awaitable<T>,
+): Promise<T | undefined> {
   if (options.dryRun) {
     loggerWithTag.info(ansis.yellow(`[dry-run] would ${description}`));
     return;
@@ -1728,7 +1846,7 @@ export async function runSideEffect(options, description, action) {
   return await action();
 }
 
-export async function detectPackageManager(cwd) {
+export async function detectPackageManager(cwd: string) {
   const packageManager = await detect({ cwd });
 
   if (!packageManager) {
@@ -1738,12 +1856,23 @@ export async function detectPackageManager(cwd) {
   return packageManager;
 }
 
-export function formatCommand(command) {
+export function resolveCommandOrThrow(agent: Agent, command: Command, args: string[]) {
+  const result = resolveCommand(agent, command, args);
+
+  if (!result) {
+    throw new Error(`Unable to resolve the package manager command for "${agent}".`);
+  }
+
+  return result;
+}
+
+export function formatCommand(command: ResolvedCommand) {
   return [command.command, ...command.args].join(" ");
 }
 
-export async function hasScripts(packageJsonPath, additions) {
+export async function hasScripts(packageJsonPath: string, additions: Record<string, string>) {
   const packageJson = await readPackageJSON(packageJsonPath);
+
   const scripts = packageJson.scripts ?? {};
 
   return Object.entries(additions).every(
@@ -1758,7 +1887,7 @@ export const defu = createDefu((obj, key, value) => {
   }
 });
 
-export function formatDuration(ms) {
+export function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms.toFixed(0)}ms`;
 
   const s = ms / 1000;
@@ -1769,30 +1898,33 @@ export function formatDuration(ms) {
   return `${m}m ${rest}s`;
 }
 
-export function blank(lines = 1) {
+export function blank(lines: number = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
-export function isVerbose(options) {
+export function isVerbose(options: ResolvedOptions) {
   return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
 }
-
-export function isPackageInstalled(cwd, packageName) {
-  try {
-    const require = createRequire(path.join(cwd, `__${CONSTANTS.CLI_NAME}_resolver__.js`));
-
-    require.resolve(packageName);
-
-    return true;
-  } catch {
-    return false;
-  }
+export function isChangelogEnabled(options: ResolvedOptions): options is ChangelogEnabledOptions {
+  return options.git.changelog !== false;
 }
 
-export async function runHook(options, hookName, context) {
+export function clearScreen(): void {
+  if (!process.stdout.isTTY) {
+    return;
+  }
+
+  process.stdout.write("\x1B[2J\x1B[H");
+}
+
+export async function runHook(
+  options: ResolvedOptions,
+  hookName: HookEvent,
+  context: ReleaseContext,
+): Promise<void> {
   if (!context) return;
 
-  const { cwd, verbose, hooks } = options;
+  const { hooks } = options;
   const hook = hooks?.[hookName];
 
   if (!hook) return;
@@ -1816,7 +1948,12 @@ export async function runHook(options, hookName, context) {
   }
 }
 
-export async function execCommand(command, args, options, execOptions = {}) {
+export async function execCommand(
+  command: string,
+  args: string[],
+  options: ResolvedOptions,
+  execOptions = {},
+) {
   logCommand(options, command, args);
 
   return await x(
@@ -1828,17 +1965,17 @@ export async function execCommand(command, args, options, execOptions = {}) {
         cwd: options.cwd,
         stdio: options.verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
       },
-    }),
+    } satisfies Partial<Options>),
   );
 }
 
-export function logCommand(options, displayCommand, args) {
+export function logCommand(options: ResolvedOptions, displayCommand: string, args: string[]) {
   if (isVerbose(options)) {
     loggerWithTag.log(ansis.yellow(`$ ${displayCommand} ${formatArgs(args)}`));
   }
 }
 
-function formatArgs(args = []) {
+function formatArgs(args: string[] = []) {
   return args
     .map((arg) => {
       const value = String(arg);
@@ -1854,36 +1991,38 @@ function formatArgs(args = []) {
 
 
 
-===== src\utils\index.js =====
+===== src\utils\index.ts =====
 
-export * from "./helpers.js";
-export * from "./fs.js";
-export * from "./pkg.js";
-export * from "./git.js";
-export * from "./interpolate.js";
-export * from "./string-argv.js";
-export * from "./git-cliff.js";
-export * from "./spinner.js";
+export * from "./helpers.ts";
+export * from "./fs.ts";
+export * from "./pkg.ts";
+export * from "./git.ts";
+export * from "./interpolate.ts";
+export * from "./str-argv.ts";
+export * from "./git-cliff.ts";
+export * from "./spinner.ts";
 
 
 
-===== src\utils\interpolate.js =====
+===== src\utils\interpolate.ts =====
 
-import CONSTANTS from "../constants/index.js";
+import type { ReleaseContext } from "../config/types.ts";
 
-function getValue(context, path) {
+function getValue(context: ReleaseContext, path: string): unknown {
   return path
     .trim()
     .split(".")
-    .reduce((value, key) => value?.[key], context);
+    .reduce<unknown>(
+      (value, key) =>
+        value !== null && typeof value === "object"
+          ? (value as Record<string, unknown>)[key]
+          : undefined,
+      context,
+    );
 }
 
-export function interpolate(template, context) {
-  if (typeof template !== "string") {
-    return template;
-  }
-
-  return template.replace(CONSTANTS.VARIABLE_RE, (match, path) => {
+export function interpolate(template: string, context: ReleaseContext): string {
+  return template.replace(/\$\{([^}]+)\}/g, (_match, path: string) => {
     const value = getValue(context, path);
 
     if (value === undefined) {
@@ -1896,32 +2035,43 @@ export function interpolate(template, context) {
 
 
 
-===== src\utils\pkg.js =====
+===== src\utils\pkg.ts =====
 
 import fs from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
-import { isFile } from "./fs.js";
 
-export async function resolvePackageJSON(cwd) {
+import type { PackageJson } from "pkg-types";
+
+import { isFile } from "./fs.ts";
+
+export async function resolvePackageJSON(cwd: string): Promise<string> {
   const packageJsonPath = path.join(cwd, "package.json");
 
   if (!(await isFile(packageJsonPath))) {
     throw new Error(`No package.json found in ${cwd}`);
   }
+
   return packageJsonPath;
 }
 
-export async function readPackageJSON(packageJsonPath) {
+export async function readPackageJSON(packageJsonPath: string): Promise<PackageJson> {
   const content = await fs.readFile(packageJsonPath, "utf8");
 
-  return JSON.parse(content);
+  return JSON.parse(content) as PackageJson;
 }
 
-export async function writePackageJSON(packageJsonPath, packageJson) {
+export async function writePackageJSON(
+  packageJsonPath: string,
+  packageJson: PackageJson,
+): Promise<void> {
   await fs.writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
 }
 
-export async function updatePackageJSON(packageJsonPath, callback) {
+export async function updatePackageJSON(
+  packageJsonPath: string,
+  callback: (packageJson: PackageJson) => void | Promise<void>,
+): Promise<PackageJson> {
   const packageJson = await readPackageJSON(packageJsonPath);
 
   await callback(packageJson);
@@ -1931,16 +2081,37 @@ export async function updatePackageJSON(packageJsonPath, callback) {
   return packageJson;
 }
 
+const cache = new Map<string, boolean>();
+export function isPackageInstalled(pkgName: string, fromDir: string = process.cwd()): boolean {
+  const cacheKey = `${fromDir}::${pkgName}`;
+  if (cache.has(cacheKey)) return cache.get(cacheKey)!;
+
+  const require = createRequire(path.join(fromDir, "noop.js"));
+  let result = false;
+  try {
+    require.resolve(pkgName);
+    result = true;
+  } catch {
+    result = false;
+  }
+
+  cache.set(cacheKey, result);
+  return result;
+}
 
 
-===== src\utils\spinner.js =====
+
+===== src\utils\spinner.ts =====
 
 import { Spinner } from "picospinner";
+
+import type { ResolvedOptions } from "../config/types.ts";
 import { isVerbose } from "./helpers.js";
+import type { Awaitable } from "./types.ts";
 
-function noop() {}
+function noop(): void {}
 
-export function createSpinner(text, options) {
+export function createSpinner(text: string, options: ResolvedOptions) {
   if (isVerbose(options)) {
     return {
       start: noop,
@@ -1951,7 +2122,6 @@ export function createSpinner(text, options) {
   }
 
   return new Spinner(text, {
-    stream: process.stderr,
     colors: {
       spinner: "green",
       text: "gray",
@@ -1959,7 +2129,11 @@ export function createSpinner(text, options) {
   });
 }
 
-export async function withSpinner(options, text, fn) {
+export async function withSpinner<T>(
+  options: ResolvedOptions,
+  text: string,
+  fn: () => Awaitable<T>,
+): Promise<T> {
   const spinner = createSpinner(text, options);
 
   spinner.start();
@@ -1973,13 +2147,21 @@ export async function withSpinner(options, text, fn) {
 
 
 
-===== src\utils\string-argv.js =====
+===== src\utils\str-argv.ts =====
 
-export function parseArgsStringToArgv(input) {
-  const args = [];
+export function strArgv(input: string, env?: string, file?: string): string[] {
+  const args: string[] = [];
+
+  if (env !== undefined) {
+    args.push(env);
+  }
+
+  if (file !== undefined) {
+    args.push(file);
+  }
 
   let current = "";
-  let quote = null;
+  let quote: "'" | '"' | null = null;
   let escaped = false;
   let hasToken = false;
 
@@ -1993,10 +2175,9 @@ export function parseArgsStringToArgv(input) {
     hasToken = false;
   };
 
-  for (const char of input.trim()) {
+  for (const char of input) {
     if (escaped) {
       current += char;
-      hasToken = true;
       escaped = false;
       continue;
     }
@@ -2045,3 +2226,21 @@ export function parseArgsStringToArgv(input) {
 
   return args;
 }
+
+
+
+===== src\utils\types.ts =====
+
+export type Awaitable<T> = T | Promise<T>;
+
+export type ExcludeAt<T, Path extends string, U> = Path extends `${infer K}.${infer Rest}`
+  ? K extends keyof T
+    ? Omit<T, K> & {
+        [P in K]: ExcludeAt<T[P], Rest, U>;
+      }
+    : T
+  : Path extends keyof T
+    ? Omit<T, Path> & {
+        [P in Path]: Exclude<T[P], U>;
+      }
+    : T;

@@ -95,14 +95,6 @@ export function isChangelogEnabled(options: ResolvedOptions): options is Changel
   return options.git.changelog !== false;
 }
 
-export function clearScreen(): void {
-  if (!process.stdout.isTTY) {
-    return;
-  }
-
-  process.stdout.write("\x1B[2J\x1B[H");
-}
-
 export async function runHook(
   options: ResolvedOptions,
   hookName: HookEvent,
