@@ -101,6 +101,12 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
       "[template]",
     ]);
 
+    if (!initCommand || !changelogCommand) {
+      throw new Error(
+        `Unable to resolve the package manager command for "${packageManager.agent}".`,
+      );
+    }
+
     if (!(await exists(resolvedCliffFile))) {
       throw Error(
         `Could not find the Git-cliff configuration file: ${ansis.yellow(resolvedCliffFile)}\n` +

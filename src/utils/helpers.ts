@@ -1,8 +1,7 @@
 import ansis from "ansis";
 import { createConsola } from "consola";
 import { createDefu } from "defu";
-import { detect } from "package-manager-detector";
-import { type ResolvedCommand } from "package-manager-detector";
+import { type ResolvedCommand, detect } from "package-manager-detector";
 import { x, type Options } from "tinyexec";
 
 import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
