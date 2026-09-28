@@ -25,7 +25,7 @@ vi.mock("@inquirer/prompts", () => ({
 //   detect: packageManagerDetector.detect,
 // }));
 
-vi.mock("../../src/utils/git.js", async (importOriginal) => {
+vi.mock("../../src/utils/git.ts", async (importOriginal) => {
   const actual = await importOriginal();
 
   return {
@@ -33,8 +33,8 @@ vi.mock("../../src/utils/git.js", async (importOriginal) => {
     isGitAvailable: vi.fn(),
   };
 });
-import { release } from "../../src/release.js";
-import { isGitAvailable } from "../../src/utils/git.js";
+import { release } from "../../src/release.ts";
+import { isGitAvailable } from "../../src/utils/git.ts";
 
 describe("release integration", () => {
   let dir;

@@ -83,6 +83,7 @@
   },
   "devDependencies": {
     "@size-limit/file": "^13.1.1",
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^26.6.3",
     "@types/semver": "^7.8.0",
     "@vitest/coverage-v8": "^4.1.11",
