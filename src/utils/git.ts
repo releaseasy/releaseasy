@@ -60,15 +60,27 @@ export async function getRemoteUrl(options: ResolvedOptions) {
   }
 }
 
-export async function getCurrentBranch(options: ResolvedOptions) {
-  const { stdout } = await git(options, ["symbolic-ref", "--short", "HEAD"]);
-  return stdout.trim();
+export async function getCurrentBranch(options: ResolvedOptions): Promise<string> {
+  try {
+    const { stdout } = await git(options, ["symbolic-ref", "--short", "HEAD"]);
+
+    return stdout.trim();
+  } catch (error) {
+    throw new Error("Failed to determine current Git branch.", {
+      cause: error,
+    });
+  }
 }
 
 export async function getCurrentCommitSha(options: ResolvedOptions) {
-  const { stdout } = await git(options, ["rev-parse", "HEAD"]);
-
-  return stdout.trim();
+  try {
+    const { stdout } = await git(options, ["rev-parse", "HEAD"]);
+    return stdout.trim();
+  } catch (error) {
+    throw new Error("Failed to determine current Git commit.", {
+      cause: error,
+    });
+  }
 }
 
 async function deleteTag(options: ResolvedOptions, context: ReleaseContext) {

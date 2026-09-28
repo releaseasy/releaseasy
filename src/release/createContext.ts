@@ -19,6 +19,7 @@ import {
   detectPackageManager,
   exists,
   formatCommand,
+  isChangelogEnabled,
 } from "../utils/index.ts";
 
 export async function createContext(options: ResolvedOptions): Promise<ReleaseContext> {
@@ -61,21 +62,9 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
     throw new Error(`package.json "version" must be a valid semver version.`);
   }
 
-  let initialCommitSha: string;
-  try {
-    initialCommitSha = await getCurrentCommitSha(options);
-  } catch (_error) {
-    throw new Error("Failed to determine current Git commit.", {
-      cause: _error,
-    });
-  }
+  const initialCommitSha = await getCurrentCommitSha(options);
 
-  let branchName: string;
-  try {
-    branchName = await getCurrentBranch(options);
-  } catch {
-    throw new Error("Failed to determine current Git branch.");
-  }
+  const branchName = await getCurrentBranch(options);
 
   if (!matchBranch(git.requireBranch, branchName)) {
     throw new Error(
@@ -85,9 +74,10 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
 
   let resolvedCliffFile: string | undefined;
   // 提前抛出配置缺少的错误,用户体验更好
-  if (git.changelog !== false) {
+
+  if (isChangelogEnabled(options)) {
     // 判断配置文件是否存在
-    resolvedCliffFile = path.join(resolvedCwd, git.changelog.configFile);
+    resolvedCliffFile = path.join(resolvedCwd, options.git.changelog.configFile);
 
     const initCommand = resolveCommand(packageManager.agent, "execute-local", [
       CONSTANTS.CLI_NAME,
@@ -116,17 +106,19 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
     }
   }
 
-  return {
-    name,
-    resolvedCwd,
-    resolvedCliffFile,
-    latestVersion: version,
-    remoteUrl,
-    packageJsonPath,
-    tagCreated: false,
-    initialCommitSha,
-    branchName,
-  };
+  const obj: ReleaseContext = Object.create(null);
+
+  obj.name = name;
+  obj.resolvedCwd = resolvedCwd;
+  obj.resolvedCliffFile = resolvedCliffFile;
+  obj.initialCommitSha = initialCommitSha;
+  obj.latestVersion = version;
+  obj.remoteUrl = remoteUrl;
+  obj.packageJsonPath = packageJsonPath;
+  obj.tagCreated = false;
+  obj.branchName = branchName;
+
+  return obj;
 }
 
 function matchBranch(requireBranch: ResolvedOptions["git"]["requireBranch"], inputBranch: string) {

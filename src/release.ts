@@ -11,7 +11,17 @@ import {
   summary,
   git,
 } from "./release/index.ts";
-import { formatDuration, rollback, logger, runSideEffect, runHook } from "./utils/index.ts";
+import {
+  formatDuration,
+  rollback,
+  logger,
+  runSideEffect,
+  runHook,
+  isChangelogEnabled,
+} from "./utils/index.ts";
+import type { ExcludeAt } from "./utils/types.ts";
+
+export type ChangelogEnabledOptions = ExcludeAt<ResolvedOptions, "git.changelog", false>;
 
 export async function release(options: ResolvedOptions) {
   const start = performance.now();
@@ -23,7 +33,7 @@ export async function release(options: ResolvedOptions) {
     await selectVersion(options, context);
     await selectTag(options, context);
 
-    if (options.git.changelog !== false) {
+    if (isChangelogEnabled(options)) {
       await runSideEffect(options, "Generate changelog", async () => {
         await genChangelog(options, context);
         await confirmChangelog();

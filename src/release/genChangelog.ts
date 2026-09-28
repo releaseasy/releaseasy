@@ -1,4 +1,5 @@
 import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import type { ChangelogEnabledOptions } from "../release.ts";
 import {
   isVerbose,
   interpolate,
@@ -9,7 +10,7 @@ import {
   runHook,
 } from "../utils/index.ts";
 
-export async function genChangelog(options: ResolvedOptions, context: ReleaseContext) {
+export async function genChangelog(options: ChangelogEnabledOptions, context: ReleaseContext) {
   // 前置钩子
   await runHook(options, "before:changelog", context);
 
@@ -34,7 +35,7 @@ export async function genChangelog(options: ResolvedOptions, context: ReleaseCon
   await runHook(options, "after:changelog", context);
 }
 
-async function buildGitCliffArgs(options: ResolvedOptions, context: ReleaseContext) {
+async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: ReleaseContext) {
   const { args: argTemplate, output } = options.git.changelog;
 
   const args = strArgv(interpolate(argTemplate, context));

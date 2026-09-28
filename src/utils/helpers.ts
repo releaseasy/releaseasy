@@ -6,6 +6,7 @@ import { x, type Options } from "tinyexec";
 
 import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
 import CONSTANTS from "../constants/index.ts";
+import type { ChangelogEnabledOptions } from "../release.ts";
 import { interpolate } from "./interpolate.ts";
 import { readPackageJSON } from "./pkg.ts";
 import { createSpinner } from "./spinner.ts";
@@ -78,6 +79,9 @@ export function blank(lines = 1) {
 
 export function isVerbose(options: ResolvedOptions) {
   return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
+}
+export function isChangelogEnabled(options: ResolvedOptions): options is ChangelogEnabledOptions {
+  return options.git.changelog !== false;
 }
 
 export async function runHook(
