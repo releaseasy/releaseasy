@@ -73,4 +73,7 @@ export interface ReleaseContext {
   tagCreated: boolean;
   initialCommitSha: string;
   branchName: string;
+  changelog: {
+    output: string;
+  };
 }
