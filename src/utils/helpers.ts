@@ -1,7 +1,8 @@
 import ansis from "ansis";
 import { createConsola } from "consola";
 import { createDefu } from "defu";
-import { type ResolvedCommand, detect } from "package-manager-detector";
+import { type ResolvedCommand, type Agent, type Command, detect } from "package-manager-detector";
+import { resolveCommand } from "package-manager-detector/commands";
 import { x, type Options } from "tinyexec";
 
 import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
@@ -39,6 +40,16 @@ export async function detectPackageManager(cwd: string) {
   }
 
   return packageManager;
+}
+
+export function resolveCommandOrThrow(agent: Agent, command: Command, args: string[]) {
+  const result = resolveCommand(agent, command, args);
+
+  if (!result) {
+    throw new Error(`Unable to resolve the package manager command for "${agent}".`);
+  }
+
+  return result;
 }
 
 export function formatCommand(command: ResolvedCommand) {

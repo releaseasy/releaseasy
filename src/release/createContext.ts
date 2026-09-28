@@ -1,7 +1,7 @@
 import path from "node:path";
 
 import ansis from "ansis";
-import { resolveCommand, type DetectResult } from "package-manager-detector";
+import { type DetectResult } from "package-manager-detector";
 import { valid } from "semver";
 
 import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
@@ -20,6 +20,7 @@ import {
   exists,
   formatCommand,
   isChangelogEnabled,
+  resolveCommandOrThrow,
 } from "../utils/index.ts";
 
 export async function createContext(options: ResolvedOptions): Promise<ReleaseContext> {
@@ -63,19 +64,19 @@ export async function createContext(options: ResolvedOptions): Promise<ReleaseCo
   // 提前抛出配置缺少的错误,用户体验更好
   const resolvedCliffFile = await resolveCliffFile(options, resolvedCwd, packageManager);
 
-  const obj: ReleaseContext = Object.create(null);
+  const context: ReleaseContext = Object.create(null);
 
-  obj.name = name;
-  obj.resolvedCwd = resolvedCwd;
-  obj.resolvedCliffFile = resolvedCliffFile;
-  obj.initialCommitSha = initialCommitSha;
-  obj.latestVersion = version;
-  obj.remoteUrl = remoteUrl;
-  obj.packageJsonPath = packageJsonPath;
-  obj.tagCreated = false;
-  obj.branchName = branchName;
+  context.name = name;
+  context.resolvedCwd = resolvedCwd;
+  context.resolvedCliffFile = resolvedCliffFile;
+  context.initialCommitSha = initialCommitSha;
+  context.latestVersion = version;
+  context.remoteUrl = remoteUrl;
+  context.packageJsonPath = packageJsonPath;
+  context.tagCreated = false;
+  context.branchName = branchName;
 
-  return obj;
+  return context;
 }
 
 async function assertGitReady(options: ResolvedOptions) {
@@ -105,21 +106,17 @@ export async function resolveCliffFile(
 
   const resolvedCliffFile = path.join(cwd, options.git.changelog.configFile);
 
-  const initCommand = resolveCommand(packageManager.agent, "execute-local", [
+  const initCommand = resolveCommandOrThrow(packageManager.agent, "execute-local", [
     CONSTANTS.CLI_NAME,
     "init",
   ]);
 
-  const changelogCommand = resolveCommand(packageManager.agent, "execute-local", [
+  const changelogCommand = resolveCommandOrThrow(packageManager.agent, "execute-local", [
     CONSTANTS.CLI_NAME,
     "changelog",
     "--init",
     "[template]",
   ]);
-
-  if (!initCommand || !changelogCommand) {
-    throw new Error(`Unable to resolve the package manager command for "${packageManager.agent}".`);
-  }
 
   if (!(await exists(resolvedCliffFile))) {
     throw Error(

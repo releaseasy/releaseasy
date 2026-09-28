@@ -1,21 +1,22 @@
 import ansis from "ansis";
-import { resolveCommand } from "package-manager-detector/commands";
+import type { ResolvedCommand } from "package-manager-detector";
 
-import CONSTANTS from "../constants/index.js";
-import { hasScripts, logger, formatCommand } from "../utils/index.js";
+import type { InitContext } from "../config/types.ts";
+import CONSTANTS from "../constants/index.ts";
+import { hasScripts, logger, formatCommand, resolveCommandOrThrow } from "../utils/index.ts";
 
-export async function dump(context) {
+export async function dump(context: InitContext) {
   const { configFile, cliffFile, packageManager, packageJsonPath, changelogFormat, configAction } =
     context;
 
   logger.success(`${configAction} ${ansis.yellow(configFile)}`);
   logger.success(`Created ${ansis.yellow(cliffFile)} ${ansis.gray(`(${changelogFormat})`)}`);
 
-  let command;
-  if (await hasScripts(packageJsonPath, CONSTANTS.DEFAULT_SCRIPTS)) {
-    command = resolveCommand(packageManager.agent, "run", ["release"]);
+  let command: ResolvedCommand;
+  if (await hasScripts(packageJsonPath, CONSTANTS.PKG_SCRIPTS)) {
+    command = resolveCommandOrThrow(packageManager.agent, "run", ["release"]);
   } else {
-    command = resolveCommand(packageManager.agent, "execute-local", [CONSTANTS.CLI_NAME]);
+    command = resolveCommandOrThrow(packageManager.agent, "execute-local", [CONSTANTS.CLI_NAME]);
   }
 
   logger.log(`

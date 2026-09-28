@@ -5,19 +5,28 @@ import { fileURLToPath } from "node:url";
 import ansis from "ansis";
 
 import packageJson from "../../package.json" with { type: "json" };
-import CONSTANTS from "../constants/index.ts";
-import jsonConfig from "../init/templates/releaseasy.config.json" with { type: "json" };
-import { exists, runGitCliff, updatePackageJSON } from "../utils/index.ts";
+import CONSTANTS, { type ConfigAction } from "../constants/index.ts";
+import configJson from "../init/templates/releaseasy.config.json" with { type: "json" };
+import {
+  exists,
+  readPackageJSON,
+  runGitCliff,
+  updatePackageJSON,
+  writePackageJSON,
+} from "../utils/index.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TEMPLATE_DIR = path.join(__dirname, "templates");
+import type { InitContext, ResolvedInitOptions } from "../config/types.ts";
 
-export async function generateFiles(options, context) {
-  const { changelogFormat, cwd, configFormat, packageJsonPath } = context;
+export async function generateFiles(options: ResolvedInitOptions, context: InitContext) {
+  const { changelogFormat, resolvedCwd, configFormat, packageJsonPath } = context;
   const { force } = options;
 
-  let configFile, configAction;
+  let configFile: string;
+  let configAction: ConfigAction;
+
   if (configFormat === "packageJson") {
     configFile = "package.json";
     configAction = CONSTANTS.CONFIG_ACTION.UPDATED;
@@ -33,13 +42,13 @@ export async function generateFiles(options, context) {
       throw new Error(`Template not found: ${configTemplate}`);
     }
 
-    const configTarget = path.join(cwd, configFile);
-    const cliffTarget = path.join(cwd, CONSTANTS.CLIFF_FILE);
+    const configTarget = path.join(resolvedCwd, configFile);
+    const cliffTarget = path.join(resolvedCwd, CONSTANTS.CLIFF_FILE);
 
     await assertCanWrite(configTarget, force);
     await assertCanWrite(cliffTarget, force);
 
-    await writeConfigFile(configTemplate, configTarget, context);
+    await writeConfigFile(configTemplate, configTarget);
   }
 
   // 调用命令生成git-cliff的配置文件
@@ -58,7 +67,6 @@ export async function generateFiles(options, context) {
     throw new Error(`Failed to generate ${CONSTANTS.CLIFF_FILE}.`, { cause: error });
   }
 
-  // 保存到上下文
   Object.assign(context, {
     configFile,
     configAction,
@@ -66,7 +74,7 @@ export async function generateFiles(options, context) {
   });
 }
 
-async function generatePackageJsonConfig(packageJsonPath, force) {
+async function generatePackageJsonConfig(packageJsonPath: string, force: boolean) {
   await updatePackageJSON(packageJsonPath, (pkg) => {
     if (pkg[CONSTANTS.CLI_NAME] && !force) {
       throw new Error(
@@ -74,11 +82,11 @@ async function generatePackageJsonConfig(packageJsonPath, force) {
           `Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
       );
     }
-    pkg[[CONSTANTS.CLI_NAME]] = jsonConfig;
+    pkg[CONSTANTS.CLI_NAME] = configJson;
   });
 }
 
-async function assertCanWrite(file, force) {
+async function assertCanWrite(file: string, force: boolean) {
   if (!force && (await exists(file))) {
     throw new Error(
       `File already exists: ${ansis.yellow(path.basename(file))}. Use ${ansis.yellow(ansis.bold("--force"))} to overwrite it.`,
@@ -86,7 +94,7 @@ async function assertCanWrite(file, force) {
   }
 }
 
-function resolveConfigExtension(context) {
+function resolveConfigExtension(context: InitContext) {
   const { configFormat, moduleFormat } = context;
 
   if (configFormat === "json") {
@@ -104,22 +112,15 @@ function resolveConfigExtension(context) {
   throw new Error(`Unsupported config format: ${configFormat}`);
 }
 
-async function writeConfigFile(template, target) {
+async function writeConfigFile(template: string, target: string) {
   if (path.extname(template) === ".json") {
-    return writeJsonConfig(template, target);
+    const config = readPackageJSON(template);
+
+    const output = {
+      $schema: `https://cdn.jsdelivr.net/npm/releaseasy@${packageJson.version}/schema/releaseasy.json`,
+      ...config,
+    };
+    return await writePackageJSON(target, output);
   }
-
   await fs.copyFile(template, target);
-}
-
-async function writeJsonConfig(template, target) {
-  const content = await fs.readFile(template, "utf8");
-  const config = JSON.parse(content);
-
-  const output = {
-    $schema: `https://cdn.jsdelivr.net/npm/releaseasy@${packageJson.version}/schema/releaseasy.json`,
-    ...config,
-  };
-
-  await fs.writeFile(target, JSON.stringify(output, null, 2) + "\n", "utf8");
 }

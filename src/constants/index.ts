@@ -1,5 +1,7 @@
 const CLI_NAME = "releaseasy";
 
+const CLIFF_FILE = "cliff.toml";
+
 const DEFAULTS = {
   increments: ["patch", "minor", "major"],
   distTags: ["latest", "next"],
@@ -11,7 +13,7 @@ const DEFAULTS = {
     tagName: "v${version}",
     changelog: {
       output: "CHANGELOG.md",
-      configFile: "cliff.toml",
+      configFile: CLIFF_FILE,
       args: "--tag ${version}",
     },
   },
@@ -22,8 +24,6 @@ const LOG_LEVEL = {
   VERBOSE: 1,
   DEBUG: 2,
 };
-
-const CLIFF_FILE = "cliff.toml";
 
 const CONFIG_FORMAT_CHOICES = [
   {
@@ -93,23 +93,28 @@ const CHANGELOG_FORMAT_CHOICES = [
     name: "Unconventional",
     value: "unconventional",
   },
-];
+] as const;
 
 const CONFIG_ACTION = {
   CREATED: "Created",
   UPDATED: "Updated",
-};
+} as const;
 
-const DEFAULT_SCRIPTS = {
+const PKG_SCRIPTS = {
   release: CLI_NAME,
 };
 
+export type ConfigFormat = (typeof CONFIG_FORMAT_CHOICES)[number]["value"];
+
+export type ChangelogFormat = (typeof CHANGELOG_FORMAT_CHOICES)[number]["value"];
+
+export type ConfigAction = (typeof CONFIG_ACTION)[keyof typeof CONFIG_ACTION];
+
 export default {
   CONFIG_ACTION,
-  DEFAULT_SCRIPTS,
   DEFAULTS,
   CLI_NAME,
-
+  PKG_SCRIPTS,
   LOG_LEVEL,
   CONFIG_FORMAT_CHOICES,
   CHANGELOG_FORMAT_CHOICES,

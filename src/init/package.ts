@@ -1,7 +1,8 @@
-import CONSTANTS from "../constants/index.js";
-import { readPackageJSON, writePackageJSON } from "../utils/index.js";
+import type { InitContext } from "../config/types.ts";
+import CONSTANTS from "../constants/index.ts";
+import { readPackageJSON, writePackageJSON } from "../utils/index.ts";
 
-export async function addScripts(context) {
+export async function addScripts(context: InitContext) {
   const { packageJsonPath, shouldAddScripts } = context;
 
   // 如果拒绝就直接返回
@@ -10,7 +11,7 @@ export async function addScripts(context) {
   const packageJson = await readPackageJSON(packageJsonPath);
   const scripts = packageJson.scripts ?? {};
 
-  const conflicts = Object.keys(CONSTANTS.DEFAULT_SCRIPTS).filter((name) => name in scripts);
+  const conflicts = Object.keys(CONSTANTS.PKG_SCRIPTS).filter((name) => name in scripts);
 
   if (conflicts.length > 0) {
     return;
@@ -18,7 +19,7 @@ export async function addScripts(context) {
 
   packageJson.scripts = {
     ...scripts,
-    ...CONSTANTS.DEFAULT_SCRIPTS,
+    ...CONSTANTS.PKG_SCRIPTS,
   };
 
   // 写入pkg.json

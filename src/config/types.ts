@@ -1,7 +1,7 @@
 import type { DetectResult } from "package-manager-detector";
 import type { ReleaseType } from "semver";
 
-import CONSTANTS from "../constants/index.ts";
+import type { ChangelogFormat, ConfigAction, ConfigFormat } from "../constants/index.ts";
 
 export type DistTag = "latest" | "next" | "beta" | "alpha" | "canary" | "rc" | (string & {}); // 允许自定义
 
@@ -88,15 +88,16 @@ export interface InitOptions {
 
 export type ResolvedInitOptions = Required<InitOptions>;
 
-type ConfigFormat = (typeof CONSTANTS.CONFIG_FORMAT_CHOICES)[number]["value"];
-
 export interface InitContext {
   resolvedCwd: string;
   packageManager: DetectResult;
   packageJsonPath: string;
   configFormat: ConfigFormat;
-  changelogFormat: string;
+  changelogFormat: ChangelogFormat;
   isTypeScriptProject: boolean;
   shouldAddScripts: boolean;
   moduleFormat: "esm" | "commonjs";
+  configFile: string;
+  configAction: ConfigAction;
+  cliffFile: string;
 }
