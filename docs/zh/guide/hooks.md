@@ -30,7 +30,7 @@ export default {
   },
    hooks: { // [!code ++]
     "after:changelog": "prettier --write CHANGELOG.md", // [!code ++]
-    "after:bump": "prettier --write package.json", // [!code ++]
+    "after:bump": "oxfmt package.json", // [!code ++]
   },// [!code ++]
 };
 
@@ -38,15 +38,19 @@ export default {
 
 ## 复用上下文
 
-变更日志路径如果你不想写两边，你可以直接使用下面的方式进行复用：
+变更日志路径如果你不想写两遍，你可以直接使用下面的方式进行复用：
 
-```js{5}
+```js{10}
 /** @type { import('releaseasy').UserConfig } */
 export default {
   ...
+  git: {
+    changelog: {
+      output: "CHANGELOG.md",
+    },
+  },
   hooks: {
     "after:changelog": "prettier --write ${changelog.output}",
   },
 };
-
 ```

@@ -1,13 +1,13 @@
 # Hooks
 
-The purpose of hooks is to execute some shell scripts at specific stages.
+The purpose of hooks is to execute shell scripts at specific stages.
 
 > [!TIP]
 > Click here to view the currently supported list of [lifecycle hooks](../reference/option-hooks#life-cycle).
 
-## Formatting after changelog generation
+## Formatting After Changelog Generation
 
-Since the formatting tools used in each project may be different, such as:
+Since the formatting tool used in each project may be different, for example:
 
 - prettier
 - Biome
@@ -30,23 +30,27 @@ export default {
   },
    hooks: { // [!code ++]
     "after:changelog": "prettier --write CHANGELOG.md", // [!code ++]
-    "after:bump": "prettier --write package.json", // [!code ++]
+    "after:bump": "oxfmt package.json", // [!code ++]
   },// [!code ++]
 };
 
 ```
 
-## Reusing context
+## Reusing Context
 
-If you do not want to write the changelog path in two places, you can reuse it directly in the following way:
+If you don't want to write the changelog path twice, you can reuse it as follows:
 
-```js{5}
+```js{10}
 /** @type { import('releaseasy').UserConfig } */
 export default {
   ...
+  git: {
+    changelog: {
+      output: "CHANGELOG.md",
+    },
+  },
   hooks: {
     "after:changelog": "prettier --write ${changelog.output}",
   },
 };
-
 ```

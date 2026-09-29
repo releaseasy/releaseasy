@@ -250,7 +250,7 @@ changelog: {
 }
 ```
 
-参数会直接传递给 git-cliff，不会被 releaseasy 重新解析或限制。
+参数会直接传递给 git-cliff。
 
 > [!NOTE]
-> 更多参数请参考 git-cliff 的 [CLI 文档](https://git-cliff.org/docs/usage/args/)。
+> `--output` 和 `--config` 已由 `changelog.output` 与 `changelog.configFile` 自动处理，请勿重复指定。更多可用参数请参考 git-cliff 的 [CLI 文档](https://git-cliff.org/docs/usage/args/)。

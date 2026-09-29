@@ -2,8 +2,35 @@
 
 配置文件允许您以集中且可复用的方式定义和自定义发行设置。
 
-> [!TIP]
-> 建议使用[安装向导](./getting-started#setup-wizard)它会自动帮助您生成 releaseasy 所需的配置文件。
+建议使用[安装向导](./getting-started#setup-wizard)它会自动帮助您生成 releaseasy 所需的配置文件。
+
+> [!WARNING]
+> 如果你启用了生成变更日志的功能，那么releaseasy要求git-cliff的配置文件是一定要显示存在的，所以您必须提前生成 git-cliff 的配置文件。
+
+## git-cliff 配置文件{#config-git-cliff}
+
+您可以使用以下任意方式来帮您快速生成git-cliff的配置文件:
+
+- [安装向导](./getting-started#setup-wizard)
+- [releaseasy changelog 命令](../reference/cli#releaseasy-changelog)
+
+比如您使用 releaseasy changelog 命令 来帮您生成：
+
+```bash
+# 创建 cliff.toml
+releaseasy changelog --init
+
+# 使用自定义名称创建配置文件
+releaseasy changelog --init --config custom.toml
+
+# 创建采用 Keep a Changelog 格式的 cliff.toml
+releaseasy changelog --init keepachangelog
+```
+
+有关配置文件初始化的更多用法和选项，请参阅 [git-cliff 官方文档：Initializing](https://git-cliff.org/docs/usage/initializing)。
+
+> [!IMPORTANT]
+> 如果你使用自定义名称创建配置文件,那么您需要创建releaseasy的配置文件，并在`git.changelog.configFile`配置指定该自定义名称。
 
 ## 配置文件
 

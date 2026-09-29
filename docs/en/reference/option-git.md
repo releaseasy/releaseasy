@@ -242,7 +242,7 @@ changelog: {
 - **Type:** `string`
 - **Default:** `"--tag ${version}"`
 
-Specify the command-line arguments passed to git-cliff.
+Specifies the command-line arguments passed to git-cliff.
 
 ```js
 changelog: {
@@ -250,7 +250,7 @@ changelog: {
 }
 ```
 
-The arguments are passed directly to git-cliff and will not be re-parsed or restricted by releaseasy.
+The arguments are passed directly to git-cliff.
 
 > [!NOTE]
-> For more arguments, please refer to git-cliff's [CLI documentation](https://git-cliff.org/docs/usage/args/).
+> `--output` and `--config` are already handled automatically by `changelog.output` and `changelog.configFile`; do not specify them again. For more available arguments, refer to git-cliff's [CLI documentation](https://git-cliff.org/docs/usage/args/).
