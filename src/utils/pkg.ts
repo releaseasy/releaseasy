@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import { createRequire } from "node:module";
 import path from "node:path";
 
 import type { PackageJson } from "pkg-types";
@@ -40,22 +39,4 @@ export async function updatePackageJSON(
   await writePackageJSON(packageJsonPath, packageJson);
 
   return packageJson;
-}
-
-const cache = new Map<string, boolean>();
-export function isPackageInstalled(pkgName: string, fromDir: string = process.cwd()): boolean {
-  const cacheKey = `${fromDir}::${pkgName}`;
-  if (cache.has(cacheKey)) return cache.get(cacheKey)!;
-
-  const require = createRequire(path.join(fromDir, "noop.js"));
-  let result = false;
-  try {
-    require.resolve(pkgName);
-    result = true;
-  } catch {
-    result = false;
-  }
-
-  cache.set(cacheKey, result);
-  return result;
 }

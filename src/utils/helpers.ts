@@ -1,3 +1,6 @@
+import { createRequire } from "node:module";
+import path from "node:path";
+
 import ansis from "ansis";
 import { createConsola } from "consola";
 import { createDefu } from "defu";
@@ -165,4 +168,29 @@ function formatArgs(args: string[] = []) {
       return JSON.stringify(value);
     })
     .join(" ");
+}
+
+const cache = new Map<string, boolean>();
+export function isPackageInstalled(pkgName: string, fromDir: string = process.cwd()): boolean {
+  const resolvedFromDir = path.resolve(fromDir);
+  const cacheKey = `${resolvedFromDir}::${pkgName}`;
+
+  const cached = cache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const require = createRequire(path.join(resolvedFromDir, "noop.js"));
+
+  let result = false;
+
+  try {
+    require.resolve(pkgName);
+    result = true;
+  } catch {
+    result = false;
+  }
+
+  cache.set(cacheKey, result);
+  return result;
 }
