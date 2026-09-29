@@ -8,12 +8,14 @@ export async function promptInit(context: InitContext) {
     message: "Which config format would you like?",
     default: context.isTypeScriptProject ? "typescript" : "javascript",
     choices: CONSTANTS.CONFIG_FORMAT_CHOICES,
+    loop: false,
   });
 
   context.changelogFormat = await select({
     message: "Which changelog format?",
     default: "default",
     choices: CONSTANTS.CHANGELOG_FORMAT_CHOICES,
+    loop: false,
   });
 
   context.shouldAddScripts = await confirm({

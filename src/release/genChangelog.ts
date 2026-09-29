@@ -1,9 +1,10 @@
+import stringArgv from "string-argv";
+
 import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
 import {
   isVerbose,
   interpolate,
-  strArgv,
   withSpinner,
   logCommand,
   runGitCliff,
@@ -38,7 +39,7 @@ export async function genChangelog(options: ChangelogEnabledOptions, context: Re
 async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: ReleaseContext) {
   const { args: argTemplate, output } = options.git.changelog;
 
-  const args = strArgv(interpolate(argTemplate, context));
+  const args = stringArgv(interpolate(argTemplate, context));
 
   args.push("--config", context.resolvedCliffFile as string);
   args.push("--output", output);
