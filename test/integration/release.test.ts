@@ -1,52 +1,45 @@
 import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
-import path from "path";
+import path from "node:path";
 
 import fs from "fs-extra";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
-const prompts = vi.hoisted(() => ({
+vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
   input: vi.fn(),
   confirm: vi.fn(),
 }));
 
-// const packageManagerDetector = vi.hoisted(() => ({
-//   detect: vi.fn(),
-// }));
-
-vi.mock("@inquirer/prompts", () => ({
-  select: prompts.select,
-  input: prompts.input,
-  confirm: prompts.confirm,
-}));
-
-// vi.mock("package-manager-detector", () => ({
-//   detect: packageManagerDetector.detect,
-// }));
-
 vi.mock("../../src/utils/git.ts", async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof import("../../src/utils/git.ts")>();
 
   return {
     ...actual,
-    isGitAvailable: vi.fn(),
+    isGitAvailable: vi.fn<typeof actual.isGitAvailable>(),
   };
 });
+
+import { confirm, input, select } from "@inquirer/prompts";
+
 import { release } from "../../src/release.ts";
 import { isGitAvailable } from "../../src/utils/git.ts";
 
+const mockedSelect = vi.mocked(select);
+const mockedInput = vi.mocked(input);
+const mockedConfirm = vi.mocked(confirm);
+const mockedIsGitAvailable = vi.mocked(isGitAvailable);
+
 describe("release integration", () => {
-  let dir;
+  let dir: string;
 
   beforeEach(async () => {
     dir = await mkdtemp(path.join(os.tmpdir(), "release-cli-test-"));
 
-    prompts.select.mockReset();
-    prompts.input.mockReset();
-    prompts.confirm.mockReset();
-
-    // packageManagerDetector.detect.mockReset();
+    mockedSelect.mockReset();
+    mockedInput.mockReset();
+    mockedConfirm.mockReset();
+    mockedIsGitAvailable.mockReset();
   });
 
   afterEach(async () => {
@@ -73,7 +66,6 @@ describe("release integration", () => {
     await fs.writeJson(path.join(dir, "package.json"), {
       name: "test-project",
       version: "1.0.0",
-      // packageManager: "pnpm@10.0.0",// 这里故意不写入该字段它才会抛出异常
     });
 
     await expect(
@@ -84,12 +76,14 @@ describe("release integration", () => {
   });
 
   it("Git 未安装应该抛出异常", async () => {
-    isGitAvailable.mockResolvedValue(false);
+    mockedIsGitAvailable.mockResolvedValue(false);
+
     await fs.writeJson(path.join(dir, "package.json"), {
       name: "test-project",
       version: "1.0.0",
       packageManager: "pnpm@10.0.0",
     });
+
     await expect(
       release({
         cwd: dir,
@@ -100,7 +94,7 @@ describe("release integration", () => {
   });
 
   it("当前目录不是 Git 仓库应该抛出异常", async () => {
-    isGitAvailable.mockResolvedValue(true);
+    mockedIsGitAvailable.mockResolvedValue(true);
 
     await fs.writeJson(path.join(dir, "package.json"), {
       name: "test-project",
@@ -116,55 +110,18 @@ describe("release integration", () => {
   });
 
   it("应该执行一次完整的 patch 版本发布", async () => {
-    // /*
-    //  * 第一次 select:
-    //  *   selectVersion()
-    //  *
-    //  * 第二次 select:
-    //  *   selectTag()
-    //  */
-    // prompts.select.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
-    // /*
-    //  * 第一次 confirm:
-    //  *   confirmChangelog()
-    //  *
-    //  * 第二次 confirm:
-    //  *   summary()
-    //  */
-    // prompts.confirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
-    // const options = await resolveConfig({
-    //   cwd,
-    //   verbose: 0,
-    // });
-    // console.log(options);
-    // await release(options);
-    // // --------------------------------------------------
-    // // package.json
-    // // --------------------------------------------------
-    // const pkg = await readPackage(cwd);
-    // expect(pkg.version).toBe("1.0.1");
-    // expect(pkg.publishConfig).toEqual({
-    //   tag: "latest",
-    // });
-    // // --------------------------------------------------
-    // // CHANGELOG.md
-    // // --------------------------------------------------
-    // const changelog = await readFile(cwd, "CHANGELOG.md");
-    // expect(changelog).toContain("# Changelog");
-    // // --------------------------------------------------
-    // // Git working tree
-    // // --------------------------------------------------
-    // const status = await gitStatus(cwd);
-    // expect(status).toBe("");
-    // // --------------------------------------------------
-    // // Git commit
-    // // --------------------------------------------------
-    // const log = await gitLog(cwd);
-    // expect(log.message).toBe("release: v1.0.1");
-    // // --------------------------------------------------
-    // // Git tag
-    // // --------------------------------------------------
-    // const tags = await gitTags(cwd);
-    // expect(tags).toContain("v1.0.1");
+    // 第一次 select:
+    //   selectVersion()
+    //
+    // 第二次 select:
+    //   selectTag()
+    // mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+    // 第一次 confirm:
+    //   confirmChangelog()
+    //
+    // 第二次 confirm:
+    //   summary()
+    // mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    // 后续补充完整 release 流程断言
   });
 });

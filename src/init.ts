@@ -6,10 +6,8 @@ import { createContext, promptInit, generateFiles, addScripts, dump } from "./in
 import { logger, blank } from "./utils/index.ts";
 
 export async function init(options: InitOptions = {}) {
-  const resolvedOptions: ResolvedInitOptions = {
-    cwd: options.cwd ?? process.cwd(),
-    force: options.force ?? false,
-  };
+  const resolvedOptions = resolveInitOptions(options);
+
   blank();
   logger.log(`${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}`);
   blank();
@@ -27,4 +25,19 @@ export async function init(options: InitOptions = {}) {
 
   // 打印日志
   await dump(context);
+}
+
+function resolveInitOptions(options: InitOptions): ResolvedInitOptions {
+  if (typeof options.cwd !== "undefined" && typeof options.cwd !== "string") {
+    throw new TypeError("The `cwd` option must be a string.");
+  }
+
+  if (typeof options.force !== "undefined" && typeof options.force !== "boolean") {
+    throw new TypeError("The `force` option must be a boolean.");
+  }
+
+  return {
+    cwd: options.cwd ?? process.cwd(),
+    force: options.force ?? false,
+  };
 }
