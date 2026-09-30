@@ -5,6 +5,8 @@ import path from "node:path";
 import fs from "fs-extra";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
+import { git } from "../helpers/git.ts";
+
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
   input: vi.fn(),
@@ -40,6 +42,10 @@ describe("release integration", () => {
     mockedInput.mockReset();
     mockedConfirm.mockReset();
     mockedIsGitAvailable.mockReset();
+
+    // 默认 Git 是可用的。
+    // 个别测试再覆盖成 false。
+    mockedIsGitAvailable.mockResolvedValue(true);
   });
 
   afterEach(async () => {
@@ -94,8 +100,6 @@ describe("release integration", () => {
   });
 
   it("当前目录不是 Git 仓库应该抛出异常", async () => {
-    mockedIsGitAvailable.mockResolvedValue(true);
-
     await fs.writeJson(path.join(dir, "package.json"), {
       name: "test-project",
       version: "1.0.0",
@@ -107,6 +111,35 @@ describe("release integration", () => {
         cwd: dir,
       }),
     ).rejects.toThrow("Current working directory is not a git repository.");
+  });
+
+  it("Git working tree 不干净应该抛出异常", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 写入一个脏数据
+    await fs.writeFile(path.join(dir, "dirty.txt"), "dirty", "utf8");
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Working directory is not clean. Please commit your changes.");
   });
 
   it("应该执行一次完整的 patch 版本发布", async () => {

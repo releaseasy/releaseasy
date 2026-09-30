@@ -5,14 +5,13 @@
 import { Command } from "commander";
 
 import pkg from "../package.json" with { type: "json" };
-import { resolveConfig } from "./config/index.ts";
 import { type InlineConfig } from "./config/types.ts";
 import CONSTANTS from "./constants/index.ts";
 import { handleError } from "./handleError.ts";
 
 const program = new Command();
 
-let currentCommand = program;
+let currentCommand: Command;
 
 program.hook("preAction", (_, actionCommand) => {
   currentCommand = actionCommand;
@@ -27,10 +26,10 @@ program
 /**
  * release
  *
- * releaseasy
- * releaseasy release
+ * releaseasy [release]
  */
-const releaseCommand = new Command("release")
+program
+  .command("release", { isDefault: true })
   .description("Release Package")
   .option("-C, --cwd <path>", "Run the release process in the specified directory")
   .option("-d, --dry-run", "Simulate release without applying changes.", false)
@@ -42,60 +41,49 @@ const releaseCommand = new Command("release")
       return previous + 1;
     },
     CONSTANTS.LOG_LEVEL.NORMAL,
-  );
+  )
+  .action(async (options: InlineConfig) => {
+    const { release } = await import("./release.ts");
 
-releaseCommand.action(async (options: InlineConfig) => {
-  const { release } = await import("./release.ts");
-
-  const resolvedOptions = await resolveConfig(options);
-
-  await release(resolvedOptions);
-});
-
-program.addCommand(releaseCommand, {
-  isDefault: true,
-});
+    await release(options);
+  });
 
 /**
  * init
  *
  * releaseasy init
  */
-const initCommand = new Command("init")
+program
+  .command("init")
   .description("Initialize releaseasy configuration")
   .option("-C, --cwd <path>", "Initialize configuration in the specified directory")
-  .option("-f, --force", "Overwrite existing configuration", false);
+  .option("-f, --force", "Overwrite existing configuration", false)
+  .action(async (options) => {
+    const { init } = await import("./init.ts");
 
-initCommand.action(async (options) => {
-  const { init } = await import("./init.ts");
-
-  await init(options);
-});
-
-program.addCommand(initCommand);
+    await init(options);
+  });
 
 /**
  * changelog
  *
  * releaseasy changelog [git-cliff args...]
  */
-const changelogCommand = new Command("changelog")
+program
+  .command("changelog")
   .description("Run git-cliff")
   .helpOption(false)
   .allowUnknownOption(true)
-  .allowExcessArguments(true);
+  .allowExcessArguments(true)
+  .action(async (_, command) => {
+    const { runGitCliff } = await import("./utils/index.ts");
 
-changelogCommand.action(async (_, command) => {
-  const { runGitCliff } = await import("./utils/index.js");
+    const result = await runGitCliff(command.args, {
+      throwOnError: false,
+    });
 
-  const result = await runGitCliff(command.args, {
-    throwOnError: false,
+    process.exit(result.exitCode ?? 0);
   });
-
-  process.exit(result.exitCode ?? 0);
-});
-
-program.addCommand(changelogCommand);
 
 async function runCLI() {
   try {
@@ -470,11 +458,22 @@ function mergeUnionIssues(issues: FlatIssue[]): FlatIssue {
 
 ===== src\constants\index.ts =====
 
+import type { ResolvedOptions } from "../config/types.ts";
+
 const CLI_NAME = "releaseasy";
 
 const CLIFF_FILE = "cliff.toml";
 
+const LOG_LEVEL = {
+  NORMAL: 0,
+  VERBOSE: 1,
+  DEBUG: 2,
+} as const;
+
 const DEFAULTS = {
+  cwd: process.cwd(),
+  dryRun: false,
+  verbose: LOG_LEVEL.NORMAL,
   increments: ["patch", "minor", "major"],
   distTags: ["latest", "next"],
   git: {
@@ -489,13 +488,9 @@ const DEFAULTS = {
       args: "--tag ${version}",
     },
   },
-};
+} satisfies ResolvedOptions;
 
-const LOG_LEVEL = {
-  NORMAL: 0,
-  VERBOSE: 1,
-  DEBUG: 2,
-};
+export type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 
 const CONFIG_FORMAT_CHOICES = [
   {
@@ -665,10 +660,8 @@ import { createContext, promptInit, generateFiles, addScripts, dump } from "./in
 import { logger, blank } from "./utils/index.ts";
 
 export async function init(options: InitOptions = {}) {
-  const resolvedOptions: ResolvedInitOptions = {
-    cwd: options.cwd ?? process.cwd(),
-    force: options.force ?? false,
-  };
+  const resolvedOptions = resolveInitOptions(options);
+
   blank();
   logger.log(`${ansis.green.bold(`Welcome to ${CONSTANTS.CLI_NAME}!`)}`);
   blank();
@@ -686,6 +679,21 @@ export async function init(options: InitOptions = {}) {
 
   // 打印日志
   await dump(context);
+}
+
+function resolveInitOptions(options: InitOptions): ResolvedInitOptions {
+  if (typeof options.cwd !== "undefined" && typeof options.cwd !== "string") {
+    throw new TypeError("The `cwd` option must be a string.");
+  }
+
+  if (typeof options.force !== "undefined" && typeof options.force !== "boolean") {
+    throw new TypeError("The `force` option must be a boolean.");
+  }
+
+  return {
+    cwd: options.cwd ?? process.cwd(),
+    force: options.force ?? false,
+  };
 }
 
 
@@ -947,12 +955,14 @@ export async function promptInit(context: InitContext) {
     message: "Which config format would you like?",
     default: context.isTypeScriptProject ? "typescript" : "javascript",
     choices: CONSTANTS.CONFIG_FORMAT_CHOICES,
+    loop: false,
   });
 
   context.changelogFormat = await select({
     message: "Which changelog format?",
     default: "default",
     choices: CONSTANTS.CHANGELOG_FORMAT_CHOICES,
+    loop: false,
   });
 
   context.shouldAddScripts = await confirm({
@@ -1053,7 +1063,8 @@ export default {
 
 import ansis from "ansis";
 
-import type { ResolvedOptions } from "./config/types.ts";
+import { resolveConfig } from "./config/index.ts";
+import type { InlineConfig, ResolvedOptions } from "./config/types.ts";
 import {
   createContext,
   selectVersion,
@@ -1071,45 +1082,47 @@ import {
   runSideEffect,
   runHook,
   isChangelogEnabled,
-  clearScreen,
 } from "./utils/index.ts";
 import type { ExcludeAt } from "./utils/types.ts";
 
 export type ChangelogEnabledOptions = ExcludeAt<ResolvedOptions, "git.changelog", false>;
 
-export async function release(options: ResolvedOptions) {
+export async function release(options: InlineConfig = {}) {
+  const resolvedOptions = await resolveConfig(options);
+
   const start = performance.now();
-
-  clearScreen();
-
-  const context = await createContext(options);
+  const context = await createContext(resolvedOptions);
 
   try {
-    await runHook(options, "before:init", context);
-    await selectVersion(options, context);
-    await selectTag(options, context);
+    await runHook(resolvedOptions, "before:init", context);
+    await selectVersion(resolvedOptions, context);
+    await selectTag(resolvedOptions, context);
 
-    if (isChangelogEnabled(options)) {
-      await runSideEffect(options, "Generate changelog", async () => {
-        await genChangelog(options, context);
+    if (isChangelogEnabled(resolvedOptions)) {
+      await runSideEffect(resolvedOptions, "Generate changelog", async () => {
+        await genChangelog(resolvedOptions, context);
         await confirmChangelog();
       });
     }
 
-    await runSideEffect(options, `Bump version to ${context.version}`, async () => {
-      await bump(options, context);
+    await runSideEffect(resolvedOptions, `Bump version to ${context.version}`, async () => {
+      await bump(resolvedOptions, context);
     });
 
-    await summary(options, context);
+    await summary(resolvedOptions, context);
 
-    await runSideEffect(options, `Git operations`, async () => await git(options, context));
+    await runSideEffect(
+      resolvedOptions,
+      `Git operations`,
+      async () => await git(resolvedOptions, context),
+    );
 
-    await runHook(options, "after:release", context);
+    await runHook(resolvedOptions, "after:release", context);
 
     const cost = formatDuration(performance.now() - start);
     logger.log(ansis.green(`🎉 Released successfully! (in ${cost})`));
   } catch (err) {
-    await rollback(options, context);
+    await rollback(resolvedOptions, context);
     throw err;
   }
 }
@@ -1316,12 +1329,13 @@ function matchBranch(requireBranch: ResolvedOptions["git"]["requireBranch"], inp
 
 ===== src\release\genChangelog.ts =====
 
+import stringArgv from "string-argv";
+
 import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
 import {
   isVerbose,
   interpolate,
-  strArgv,
   withSpinner,
   logCommand,
   runGitCliff,
@@ -1356,7 +1370,7 @@ export async function genChangelog(options: ChangelogEnabledOptions, context: Re
 async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: ReleaseContext) {
   const { args: argTemplate, output } = options.git.changelog;
 
-  const args = strArgv(interpolate(argTemplate, context));
+  const args = stringArgv(interpolate(argTemplate, context));
 
   args.push("--config", context.resolvedCliffFile as string);
   args.push("--output", output);
@@ -1812,6 +1826,9 @@ export async function push(options: ResolvedOptions, context: ReleaseContext) {
 
 ===== src\utils\helpers.ts =====
 
+import { createRequire } from "node:module";
+import path from "node:path";
+
 import ansis from "ansis";
 import { createConsola } from "consola";
 import { createDefu } from "defu";
@@ -1909,14 +1926,6 @@ export function isChangelogEnabled(options: ResolvedOptions): options is Changel
   return options.git.changelog !== false;
 }
 
-export function clearScreen(): void {
-  if (!process.stdout.isTTY) {
-    return;
-  }
-
-  process.stdout.write("\x1B[2J\x1B[H");
-}
-
 export async function runHook(
   options: ResolvedOptions,
   hookName: HookEvent,
@@ -1989,6 +1998,31 @@ function formatArgs(args: string[] = []) {
     .join(" ");
 }
 
+const cache = new Map<string, boolean>();
+export function isPackageInstalled(pkgName: string, fromDir: string = process.cwd()): boolean {
+  const resolvedFromDir = path.resolve(fromDir);
+  const cacheKey = `${resolvedFromDir}::${pkgName}`;
+
+  const cached = cache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const require = createRequire(path.join(resolvedFromDir, "noop.js"));
+
+  let result = false;
+
+  try {
+    require.resolve(pkgName);
+    result = true;
+  } catch {
+    result = false;
+  }
+
+  cache.set(cacheKey, result);
+  return result;
+}
+
 
 
 ===== src\utils\index.ts =====
@@ -1998,7 +2032,6 @@ export * from "./fs.ts";
 export * from "./pkg.ts";
 export * from "./git.ts";
 export * from "./interpolate.ts";
-export * from "./str-argv.ts";
 export * from "./git-cliff.ts";
 export * from "./spinner.ts";
 
@@ -2038,7 +2071,6 @@ export function interpolate(template: string, context: ReleaseContext): string {
 ===== src\utils\pkg.ts =====
 
 import fs from "node:fs/promises";
-import { createRequire } from "node:module";
 import path from "node:path";
 
 import type { PackageJson } from "pkg-types";
@@ -2081,24 +2113,6 @@ export async function updatePackageJSON(
   return packageJson;
 }
 
-const cache = new Map<string, boolean>();
-export function isPackageInstalled(pkgName: string, fromDir: string = process.cwd()): boolean {
-  const cacheKey = `${fromDir}::${pkgName}`;
-  if (cache.has(cacheKey)) return cache.get(cacheKey)!;
-
-  const require = createRequire(path.join(fromDir, "noop.js"));
-  let result = false;
-  try {
-    require.resolve(pkgName);
-    result = true;
-  } catch {
-    result = false;
-  }
-
-  cache.set(cacheKey, result);
-  return result;
-}
-
 
 
 ===== src\utils\spinner.ts =====
@@ -2106,7 +2120,7 @@ export function isPackageInstalled(pkgName: string, fromDir: string = process.cw
 import { Spinner } from "picospinner";
 
 import type { ResolvedOptions } from "../config/types.ts";
-import { isVerbose } from "./helpers.js";
+import { isVerbose } from "./helpers.ts";
 import type { Awaitable } from "./types.ts";
 
 function noop(): void {}
@@ -2143,88 +2157,6 @@ export async function withSpinner<T>(
   } finally {
     spinner.stop();
   }
-}
-
-
-
-===== src\utils\str-argv.ts =====
-
-export function strArgv(input: string, env?: string, file?: string): string[] {
-  const args: string[] = [];
-
-  if (env !== undefined) {
-    args.push(env);
-  }
-
-  if (file !== undefined) {
-    args.push(file);
-  }
-
-  let current = "";
-  let quote: "'" | '"' | null = null;
-  let escaped = false;
-  let hasToken = false;
-
-  const push = () => {
-    if (!hasToken) {
-      return;
-    }
-
-    args.push(current);
-    current = "";
-    hasToken = false;
-  };
-
-  for (const char of input) {
-    if (escaped) {
-      current += char;
-      escaped = false;
-      continue;
-    }
-
-    if (char === "\\") {
-      escaped = true;
-      hasToken = true;
-      continue;
-    }
-
-    if (quote !== null) {
-      if (char === quote) {
-        quote = null;
-      } else {
-        current += char;
-      }
-
-      hasToken = true;
-      continue;
-    }
-
-    if (char === '"' || char === "'") {
-      quote = char;
-      hasToken = true;
-      continue;
-    }
-
-    if (/\s/.test(char)) {
-      push();
-      continue;
-    }
-
-    current += char;
-    hasToken = true;
-  }
-
-  if (escaped) {
-    current += "\\";
-  }
-
-  if (quote !== null) {
-    throw new Error(`Unclosed quote: ${quote}`);
-  }
-
-  push();
-
-  return args;
 }
 
 
