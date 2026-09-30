@@ -5,7 +5,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
-import { git } from "../helpers/git.ts";
+import { addGitRemote, git } from "../helpers/git.ts";
 
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
@@ -34,9 +34,11 @@ const mockedIsGitAvailable = vi.mocked(isGitAvailable);
 
 describe("release integration", () => {
   let dir: string;
+  let remoteDir: string;
 
   beforeEach(async () => {
     dir = await mkdtemp(path.join(os.tmpdir(), "release-cli-test-"));
+    remoteDir = await mkdtemp(path.join(os.tmpdir(), "release-cli-remote-"));
 
     mockedSelect.mockReset();
     mockedInput.mockReset();
@@ -50,6 +52,7 @@ describe("release integration", () => {
 
   afterEach(async () => {
     await fs.remove(dir);
+    await fs.remove(remoteDir);
   });
 
   it("目录不存在应该抛出异常", async () => {
@@ -141,6 +144,186 @@ describe("release integration", () => {
       }),
     ).rejects.toThrow("Working directory is not clean. Please commit your changes.");
   });
+
+  it("没有 Git remote 应该抛出异常", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("No Git remote repository found");
+  });
+
+  it("package.json name 为空应该抛出异常", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow('package.json "name" must be a non-empty string.');
+  });
+
+  it("package.json version 非法应该抛出异常", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "not-a-version",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow('package.json "version" must be a valid semver version.');
+  });
+
+  it("Git branch 不符合 requireBranch 应该抛出异常", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "develop"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Release is only allowed on main, current: develop");
+  });
+
+  it("缺少 cliff.toml 应该提前抛出异常", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Could not find the Git-cliff configuration file");
+  });
+
+  // it("requireBranch=false 时允许任意 branch 发布", async () => {
+  //   // 写入json
+  //   await fs.writeJson(
+  //     path.join(dir, "package.json"),
+  //     {
+  //       name: "test-project",
+  //       version: "1.0.0",
+  //       packageManager: "pnpm@10.0.0",
+  //     },
+  //     { spaces: 2 },
+  //   );
+
+  //   // 初始化git仓库
+  //   await git(dir, ["init", "-b", "develop"]);
+  //   await git(dir, ["config", "user.name", "releaseasy-test"]);
+  //   await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+  //   await git(dir, ["add", "."]);
+  //   await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+  //   // 添加一个远程仓库
+  //   await addGitRemote(dir, remoteDir);
+
+  //   mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+  //   mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+  //   await release({
+  //     cwd: dir,
+  //     git: {
+  //       requireBranch: false,
+  //     },
+  //   });
+
+  //   // const pkg = await readPackage();
+
+  //   // expect(pkg.version).toBe("1.0.1");
+  //   // expect(pkg.publishConfig.tag).toBe("latest");
+  // });
 
   it("应该执行一次完整的 patch 版本发布", async () => {
     // 第一次 select:

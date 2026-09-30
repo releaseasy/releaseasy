@@ -1,15 +1,15 @@
 import { x } from "tinyexec";
 
-export interface GitOptions {
-  stdio?: "pipe" | "inherit" | "ignore";
-}
-
-export async function git(cwd: string, args: string[], options: GitOptions = {}) {
+export async function git(cwd: string, args: string[]) {
   return x("git", args, {
     throwOnError: true,
     nodeOptions: {
       cwd,
-      stdio: options.stdio ?? "pipe",
     },
   });
+}
+
+export async function addGitRemote(cwd: string, remoteDir: string) {
+  await git(remoteDir, ["init", "--bare"]);
+  await git(cwd, ["remote", "add", "origin", remoteDir]);
 }
