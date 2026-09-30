@@ -5,6 +5,7 @@
 # releaseasy
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-048754?logo=buymeacoffee)](https://www.lujiahao.com/sponsor)
+[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.tslang.org)
 [![npm version](https://img.shields.io/npm/v/releaseasy)](https://www.npmjs.com/package/releaseasy)
 [![codecov](https://codecov.io/gh/releaseasy/releaseasy/graph/badge.svg?token=G2P1AI238H)](https://codecov.io/gh/releaseasy/releaseasy)
 [![Test](https://img.shields.io/github/actions/workflow/status/releaseasy/releaseasy/tests.yml?label=Test&logo=github&style=flat-square&branch=main)](https://github.com/releaseasy/releaseasy/actions/workflows/tests.yml)
