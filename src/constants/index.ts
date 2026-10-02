@@ -4,16 +4,18 @@ const CLI_NAME = "releaseasy";
 
 const CLIFF_FILE = "cliff.toml";
 
-const LOG_LEVEL = {
+const VERBOSITY = {
   NORMAL: 0,
   VERBOSE: 1,
   DEBUG: 2,
 } as const;
 
+export type Verbosity = (typeof VERBOSITY)[keyof typeof VERBOSITY];
+
 const DEFAULTS = {
   cwd: process.cwd(),
   dryRun: false,
-  verbose: LOG_LEVEL.NORMAL,
+  verbose: VERBOSITY.NORMAL,
   increments: ["patch", "minor", "major"],
   distTags: ["latest", "next"],
   git: {
@@ -29,8 +31,6 @@ const DEFAULTS = {
     },
   },
 } satisfies ResolvedOptions;
-
-export type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 
 const CONFIG_FORMAT_CHOICES = [
   {
@@ -122,7 +122,7 @@ export default {
   DEFAULTS,
   CLI_NAME,
   PKG_SCRIPTS,
-  LOG_LEVEL,
+  VERBOSITY,
   CONFIG_FORMAT_CHOICES,
   CHANGELOG_FORMAT_CHOICES,
   CLIFF_FILE,

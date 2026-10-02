@@ -32,13 +32,13 @@ program
   .option("-C, --cwd <path>", "Run the release process in the specified directory")
   .option("-d, --dry-run", "Simulate release without applying changes.", false)
   .option("-c, --config <path>", "Path to the config file")
-  .option(
+  .option<number>(
     "-v, --verbose",
     "Increases the logging verbosity",
     (_, previous) => {
       return previous + 1;
     },
-    CONSTANTS.LOG_LEVEL.NORMAL,
+    CONSTANTS.VERBOSITY.NORMAL,
   )
   .action(async (options: InlineConfig) => {
     const { release } = await import("./release.ts");

@@ -9,7 +9,7 @@ import { resolveCommand } from "package-manager-detector/commands";
 import { x, type Options } from "tinyexec";
 
 import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
-import CONSTANTS from "../constants/index.ts";
+import CONSTANTS, { type Verbosity } from "../constants/index.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
 import { interpolate } from "./interpolate.ts";
 import { readPackageJSON } from "./pkg.ts";
@@ -91,9 +91,10 @@ export function blank(lines: number = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
-export function isVerbose(options: ResolvedOptions) {
-  return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
+export function hasVerbosity(verbose: number, level: Verbosity = CONSTANTS.VERBOSITY.VERBOSE) {
+  return verbose >= level;
 }
+
 export function isChangelogEnabled(options: ResolvedOptions): options is ChangelogEnabledOptions {
   return options.git.changelog !== false;
 }
@@ -144,14 +145,14 @@ export async function execCommand(
       throwOnError: true,
       nodeOptions: {
         cwd: options.cwd,
-        stdio: options.verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
+        stdio: options.verbose > CONSTANTS.VERBOSITY.VERBOSE ? "inherit" : "pipe",
       },
     } satisfies Partial<Options>),
   );
 }
 
 export function logCommand(options: ResolvedOptions, displayCommand: string, args: string[]) {
-  if (isVerbose(options)) {
+  if (hasVerbosity(options.verbose)) {
     loggerWithTag.log(ansis.yellow(`$ ${displayCommand} ${formatArgs(args)}`));
   }
 }

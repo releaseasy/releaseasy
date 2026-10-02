@@ -1,13 +1,13 @@
 import { Spinner } from "picospinner";
 
 import type { ResolvedOptions } from "../config/types.ts";
-import { isVerbose } from "./helpers.ts";
+import { hasVerbosity } from "./helpers.ts";
 import type { Awaitable } from "./types.ts";
 
 function noop(): void {}
 
 export function createSpinner(text: string, options: ResolvedOptions) {
-  if (isVerbose(options)) {
+  if (hasVerbosity(options.verbose)) {
     return {
       start: noop,
       stop: noop,

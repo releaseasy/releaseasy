@@ -3,7 +3,7 @@ import stringArgv from "string-argv";
 import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
 import {
-  isVerbose,
+  hasVerbosity,
   interpolate,
   withSpinner,
   logCommand,
@@ -23,7 +23,7 @@ export async function genChangelog(options: ChangelogEnabledOptions, context: Re
       await runGitCliff(args, {
         nodeOptions: {
           cwd: options.cwd,
-          stdio: isVerbose(options) ? "inherit" : "pipe",
+          stdio: hasVerbosity(options.verbose) ? "inherit" : "pipe",
         },
       });
     } catch (error) {
@@ -54,7 +54,7 @@ async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: Rele
 }
 
 function getVerboseArgs(options: ResolvedOptions) {
-  if (!isVerbose(options)) {
+  if (!hasVerbosity(options.verbose)) {
     return [];
   }
 

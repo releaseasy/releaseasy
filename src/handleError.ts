@@ -18,7 +18,7 @@ export function handleError(err: unknown, options: HandleErrorOptions = {}): nev
   if (err instanceof Error) {
     const { verbose } = options;
 
-    if (verbose === undefined || verbose > CONSTANTS.LOG_LEVEL.DEBUG) {
+    if (verbose === undefined || verbose > CONSTANTS.VERBOSITY.DEBUG) {
       logger.error(err);
     } else {
       logger.error(err.message);
