@@ -167,9 +167,6 @@ importers:
       fs-extra:
         specifier: ^11.4.1
         version: 11.4.1
-      jiti:
-        specifier: ^2.7.0
-        version: 2.7.0
       npm-run-all2:
         specifier: ^9.0.3
         version: 9.0.3
@@ -3996,7 +3993,8 @@ snapshots:
       html-escaper: 2.0.2
       istanbul-lib-report: 3.0.1
 
-  jiti@2.7.0: {}
+  jiti@2.7.0:
+    optional: true
 
   js-tokens@10.0.0: {}
 
