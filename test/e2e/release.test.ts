@@ -34,6 +34,7 @@ vi.mock("../../src/utils/git-cliff.ts", async (importOriginal) => {
 
 import { confirm, input, select } from "@inquirer/prompts";
 
+import type { DistTag } from "../../src/config/types.ts";
 import { release } from "../../src/release.ts";
 import { runGitCliff } from "../../src/utils/git-cliff.ts";
 import { isGitAvailable } from "../../src/utils/git.ts";
@@ -428,5 +429,731 @@ describe("release", () => {
     expect(cliffArgs).toContain(path.join(dir, "cliff.toml"));
     expect(cliffArgs).toContain("--output");
     expect(cliffArgs).toContain("CHANGELOG.md");
+  });
+
+  it("应该支持自定义版本号", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("custom").mockResolvedValueOnce("latest");
+
+    mockedInput.mockResolvedValueOnce("1.2.3");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.2.3");
+    expect(mockedInput).toHaveBeenCalledTimes(1);
+  });
+
+  it("应该支持 minor release", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.1.0").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.1.0");
+  });
+
+  it("应该支持 major release", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("2.0.0").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("2.0.0");
+  });
+
+  it("prerelease 版本应该允许选择非 latest tag", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.1.0-beta.1").mockResolvedValueOnce("next");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.1.0-beta.1");
+    expect(pkg.publishConfig!.tag).toBe("next");
+
+    type TagChoice = {
+      name: string;
+      value: DistTag;
+      disabled: boolean;
+    };
+
+    const tagCall = mockedSelect.mock.calls[1]![0] as {
+      choices: readonly TagChoice[];
+    };
+
+    const latestChoice = tagCall.choices.find((choice) => choice.value === "latest");
+
+    expect(latestChoice?.disabled).toBe(true);
+  });
+
+  it("应该支持自定义 dist-tag", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("canary");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      distTags: ["latest", "next", "canary"],
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.publishConfig!.tag).toBe("canary");
+  });
+
+  it("git.changelog=false 时不应该生成 changelog", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    // await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    // changelog confirm 不应该发生。
+    // 这里只有 summary confirm。
+    mockedConfirm.mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      git: {
+        changelog: false,
+      },
+    });
+
+    expect(mockedRunGitCliff).not.toHaveBeenCalled();
+    expect(mockedConfirm).toHaveBeenCalledTimes(1);
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.1");
+    expect(pkg.publishConfig!.tag).toBe("latest");
+    expect(await fs.pathExists(path.join(dir, "CHANGELOG.md"))).toBe(false);
+  });
+
+  it("用户拒绝 changelog 后应该取消 release", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(false);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Release cancelled by user");
+
+    const pkg = await readPackage(dir);
+
+    // bump 尚未执行
+    expect(pkg.version).toBe("1.0.0");
+
+    // git tag 也不应该创建
+    expect(await gitTagExists(dir, "v1.0.1")).toBe(false);
+  });
+
+  it("git-cliff 失败应该阻止 release", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedRunGitCliff.mockRejectedValueOnce(new Error("git-cliff failed"));
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Failed to generate changelog");
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.0");
+    expect(await gitTagExists(dir, "v1.0.1")).toBe(false);
+  });
+
+  it("dry-run 不应该修改 package.json", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      dryRun: true,
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.0");
+    expect(pkg.publishConfig).toBeUndefined();
+
+    // Generate changelog 和 bump/git 都属于 side effect。
+    expect(mockedRunGitCliff).not.toHaveBeenCalled();
+
+    expect(await gitTagExists(dir, "v1.0.1")).toBe(false);
+  });
+
+  it("summary 确认失败应该取消 release", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm
+      // changelog
+      .mockResolvedValueOnce(true)
+      // summary
+      .mockResolvedValueOnce(false);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Release cancelled by user");
+
+    const pkg = await readPackage(dir);
+
+    // bump 在 summary 之后，所以 package.json 不应该被修改。
+    expect(pkg.version).toBe("1.0.0");
+
+    expect(await gitTagExists(dir, "v1.0.1")).toBe(false);
+  });
+
+  it("应该执行 before:init 和 after:release hooks", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      hooks: {
+        "before:init": `echo before-init`,
+        "after:release": `echo after-release`,
+      },
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.1");
+  });
+
+  it("应该执行 before/after changelog hooks", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      hooks: {
+        "before:changelog": "echo before-changelog",
+        "after:changelog": "echo after-changelog",
+      },
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.1");
+  });
+
+  it("应该执行 before/after bump hooks", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      hooks: {
+        "before:bump": "echo before-bump",
+        "after:bump": "echo after-bump",
+      },
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.1");
+  });
+
+  it("hook 可以使用 ReleaseContext 插值变量", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      hooks: {
+        "before:bump": "echo ${version}",
+      },
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.1");
+  });
+
+  it("Git push 失败后应该 rollback package.json 和 tag", async () => {
+    // 不配置真正可用的 remote。
+    // 但 remote URL 存在，所以 createContext 能通过。
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    // await addGitRemote(dir, remoteDir);
+
+    const invalidRemote = path.join(
+      os.tmpdir(),
+      `releaseasy-non-existent-remote-${Date.now()}.git`,
+    );
+
+    await git(dir, ["remote", "add", "origin", invalidRemote]);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await expect(
+      release({
+        cwd: dir,
+      }),
+    ).rejects.toThrow("Release failed");
+
+    const pkg = await readPackage(dir);
+
+    // rollback reset --hard initialCommitSha
+    expect(pkg.version).toBe("1.0.0");
+
+    // tag 创建过，但 rollback 应该删除
+    expect(await gitTagExists(dir, "v1.0.1")).toBe(false);
+
+    // changelog 是 untracked file，也应该被 git clean -fd 删除
+    expect(await fs.pathExists(path.join(dir, "CHANGELOG.md"))).toBe(false);
+
+    // 应该回到初始 commit
+    const { stdout } = await git(dir, ["log", "-1", "--pretty=%s"]);
+
+    expect(stdout.trim()).toBe("chore: initial commit");
+  });
+
+  it("应该使用自定义 tagName 和 commitMessage", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+      git: {
+        tagName: "release-${version}",
+        commitMessage: "chore(release): ${version}",
+      },
+    });
+
+    expect(await gitTagExists(dir, "release-1.0.1")).toBe(true);
+
+    const { stdout } = await git(dir, ["log", "-1", "--pretty=%s"]);
+
+    expect(stdout.trim()).toBe("chore(release): 1.0.1");
+
+    const { stdout: remoteTag } = await git(remoteDir, ["show-ref", "--tags"]);
+
+    expect(remoteTag).toContain("refs/tags/release-1.0.1");
   });
 });
