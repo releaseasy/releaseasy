@@ -6,7 +6,7 @@ import fs from "fs-extra";
 import type { PackageJson } from "pkg-types";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
-import { addGitRemote, git } from "../helpers/git.ts";
+import { addGitRemote, git, gitTagExists, readPackage } from "../helpers/git.ts";
 
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
@@ -23,17 +23,27 @@ vi.mock("../../src/utils/git.ts", async (importOriginal) => {
   };
 });
 
+vi.mock("../../src/utils/git-cliff.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/utils/git-cliff.ts")>();
+
+  return {
+    ...actual,
+    runGitCliff: vi.fn(),
+  };
+});
+
 import { confirm, input, select } from "@inquirer/prompts";
 
 import { release } from "../../src/release.ts";
+import { runGitCliff } from "../../src/utils/git-cliff.ts";
 import { isGitAvailable } from "../../src/utils/git.ts";
-
 const mockedSelect = vi.mocked(select);
 const mockedInput = vi.mocked(input);
 const mockedConfirm = vi.mocked(confirm);
 const mockedIsGitAvailable = vi.mocked(isGitAvailable);
+const mockedRunGitCliff = vi.mocked(runGitCliff);
 
-describe("release integration", () => {
+describe("release", () => {
   let dir: string;
   let remoteDir: string;
 
@@ -45,10 +55,32 @@ describe("release integration", () => {
     mockedInput.mockReset();
     mockedConfirm.mockReset();
     mockedIsGitAvailable.mockReset();
+    mockedRunGitCliff.mockReset();
 
     // 默认 Git 是可用的。
     // 个别测试再覆盖成 false。
     mockedIsGitAvailable.mockResolvedValue(true);
+
+    // 默认 changelog 生成成功，并创建 CHANGELOG.md。
+    mockedRunGitCliff.mockImplementation(async (args) => {
+      const outputIndex = args.indexOf("--output");
+
+      const output = outputIndex !== -1 ? args[outputIndex + 1] : undefined;
+
+      if (output) {
+        await fs.writeFile(
+          path.join(dir, output),
+          "# Changelog\n\n## v1.0.1\n\n- Test release\n",
+          "utf8",
+        );
+      }
+
+      return {
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+      } as Awaited<ReturnType<typeof runGitCliff>>;
+    });
   });
 
   afterEach(async () => {
@@ -287,7 +319,7 @@ describe("release integration", () => {
     ).rejects.toThrow("Could not find the Git-cliff configuration file");
   });
 
-  it.only("requireBranch=false 时允许任意 branch 发布", async () => {
+  it("requireBranch=false 时允许任意 branch 发布", async () => {
     // 写入json
     await fs.writeJson(
       path.join(dir, "package.json"),
@@ -331,18 +363,70 @@ describe("release integration", () => {
   });
 
   it("应该执行一次完整的 patch 版本发布", async () => {
-    // 第一次 select:
-    //   selectVersion()
-    //
-    // 第二次 select:
-    //   selectTag()
-    // mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
-    // 第一次 confirm:
-    //   confirmChangelog()
-    //
-    // 第二次 confirm:
-    //   summary()
-    // mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
-    // 后续补充完整 release 流程断言
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
+
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "main"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
+
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
+
+    mockedSelect
+      // selectVersion()
+      .mockResolvedValueOnce("1.0.1")
+      // selectTag()
+      .mockResolvedValueOnce("latest");
+
+    mockedConfirm
+      // confirmChangelog()
+      .mockResolvedValueOnce(true)
+      // summary()
+      .mockResolvedValueOnce(true);
+
+    await release({
+      cwd: dir,
+    });
+
+    const pkg = await readPackage(dir);
+
+    expect(pkg.version).toBe("1.0.1");
+    expect(pkg.publishConfig).toEqual({
+      tag: "latest",
+    });
+
+    expect(await fs.pathExists(path.join(dir, "CHANGELOG.md"))).toBe(true);
+
+    expect(await gitTagExists(dir, "v1.0.1")).toBe(true);
+
+    const { stdout: remoteTag } = await git(remoteDir, ["show-ref", "--tags"]);
+
+    expect(remoteTag).toContain("refs/tags/v1.0.1");
+
+    expect(mockedRunGitCliff).toHaveBeenCalledTimes(1);
+
+    // 上一句已经保证：mock.calls.length === 1 所以可以直接!断言
+    const cliffArgs = mockedRunGitCliff.mock.calls[0]![0];
+
+    expect(cliffArgs).toContain("--config");
+    expect(cliffArgs).toContain(path.join(dir, "cliff.toml"));
+    expect(cliffArgs).toContain("--output");
+    expect(cliffArgs).toContain("CHANGELOG.md");
   });
 });
