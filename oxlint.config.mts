@@ -1,7 +1,7 @@
 import { defineConfig } from "oxlint";
 
 export default defineConfig({
-  ignorePatterns: ["dist/**", "coverage/**", "vendor/**", "test/snapshots/**"],
+  ignorePatterns: ["dist/**", "coverage/**", "vendor/**", "test/snapshots/**", "test/unit/**"],
   plugins: ["typescript", "unicorn", "oxc"],
   categories: {
     correctness: "error",

@@ -1,8 +1,9 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, copyFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import fs from "fs-extra";
+import type { PackageJson } from "pkg-types";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import { addGitRemote, git } from "../helpers/git.ts";
@@ -286,44 +287,48 @@ describe("release integration", () => {
     ).rejects.toThrow("Could not find the Git-cliff configuration file");
   });
 
-  // it("requireBranch=false 时允许任意 branch 发布", async () => {
-  //   // 写入json
-  //   await fs.writeJson(
-  //     path.join(dir, "package.json"),
-  //     {
-  //       name: "test-project",
-  //       version: "1.0.0",
-  //       packageManager: "pnpm@10.0.0",
-  //     },
-  //     { spaces: 2 },
-  //   );
+  it.only("requireBranch=false 时允许任意 branch 发布", async () => {
+    // 写入json
+    await fs.writeJson(
+      path.join(dir, "package.json"),
+      {
+        name: "test-project",
+        version: "1.0.0",
+        packageManager: "pnpm@10.0.0",
+      },
+      { spaces: 2 },
+    );
 
-  //   // 初始化git仓库
-  //   await git(dir, ["init", "-b", "develop"]);
-  //   await git(dir, ["config", "user.name", "releaseasy-test"]);
-  //   await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-  //   await git(dir, ["add", "."]);
-  //   await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+    // 初始化git仓库
+    await git(dir, ["init", "-b", "develop"]);
+    await git(dir, ["config", "user.name", "releaseasy-test"]);
+    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
 
-  //   // 添加一个远程仓库
-  //   await addGitRemote(dir, remoteDir);
+    // 插入一个配置文件
+    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
 
-  //   mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
+    await git(dir, ["add", "."]);
+    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
 
-  //   mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    // 添加一个远程仓库
+    await addGitRemote(dir, remoteDir);
 
-  //   await release({
-  //     cwd: dir,
-  //     git: {
-  //       requireBranch: false,
-  //     },
-  //   });
+    mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
-  //   // const pkg = await readPackage();
+    mockedConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
 
-  //   // expect(pkg.version).toBe("1.0.1");
-  //   // expect(pkg.publishConfig.tag).toBe("latest");
-  // });
+    await release({
+      cwd: dir,
+      git: {
+        requireBranch: false,
+      },
+    });
+
+    const pkg = (await fs.readJSON(path.join(dir, "package.json"))) as PackageJson;
+
+    expect(pkg.version).toBe("1.0.1");
+    expect(pkg.publishConfig!.tag).toBe("latest");
+  });
 
   it("应该执行一次完整的 patch 版本发布", async () => {
     // 第一次 select:
