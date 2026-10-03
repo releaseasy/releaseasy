@@ -61,7 +61,7 @@ export interface ResolvedOptions {
   verbose: number;
 }
 
-// release 流程 运行时的上下文数据
+/** @internal */
 export interface ReleaseContext {
   name: string;
   version: string;
@@ -88,6 +88,7 @@ export interface InitOptions {
 
 export type ResolvedInitOptions = Required<InitOptions>;
 
+/** @internal */
 export interface InitContext {
   resolvedCwd: string;
   packageManager: DetectResult;
