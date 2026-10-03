@@ -5,9 +5,12 @@
 import { Command } from "commander";
 
 import pkg from "../package.json" with { type: "json" };
-import { type InlineConfig } from "./config/types.ts";
+import { type InlineConfig, type ResolvedOptions } from "./config/types.ts";
 import CONSTANTS from "./constants/index.ts";
 import { handleError } from "./handleError.ts";
+
+type VerbosityOptions = Pick<ResolvedOptions, "verbose">;
+type Verbose = ResolvedOptions["verbose"];
 
 const program = new Command();
 
@@ -34,13 +37,13 @@ program
   .option("-C, --cwd <path>", "Run the release process in the specified directory")
   .option("-d, --dry-run", "Simulate release without applying changes.", false)
   .option("-c, --config <path>", "Path to the config file")
-  .option(
+  .option<Verbose>(
     "-v, --verbose",
     "Increases the logging verbosity",
     (_, previous) => {
       return previous + 1;
     },
-    CONSTANTS.LOG_LEVEL.NORMAL,
+    CONSTANTS.VERBOSITY.NORMAL,
   )
   .action(async (options: InlineConfig) => {
     const { release } = await import("./release.ts");
@@ -89,9 +92,12 @@ async function runCLI() {
   try {
     await program.parseAsync(process.argv);
   } catch (err) {
-    handleError(err, {
-      verbose: currentCommand.opts().verbose,
-    });
+    const verbose =
+      currentCommand?.opts<VerbosityOptions>().verbose ??
+      program.opts<VerbosityOptions>().verbose ??
+      CONSTANTS.VERBOSITY.NORMAL;
+
+    handleError(err, verbose);
   }
 }
 
@@ -464,16 +470,19 @@ const CLI_NAME = "releaseasy";
 
 const CLIFF_FILE = "cliff.toml";
 
-const LOG_LEVEL = {
+const VERBOSITY = {
   NORMAL: 0,
   VERBOSE: 1,
   DEBUG: 2,
+  TRACE: 3,
 } as const;
+
+export type Verbosity = (typeof VERBOSITY)[keyof typeof VERBOSITY];
 
 const DEFAULTS = {
   cwd: process.cwd(),
   dryRun: false,
-  verbose: LOG_LEVEL.NORMAL,
+  verbose: VERBOSITY.NORMAL,
   increments: ["patch", "minor", "major"],
   distTags: ["latest", "next"],
   git: {
@@ -489,8 +498,6 @@ const DEFAULTS = {
     },
   },
 } satisfies ResolvedOptions;
-
-export type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 
 const CONFIG_FORMAT_CHOICES = [
   {
@@ -582,7 +589,7 @@ export default {
   DEFAULTS,
   CLI_NAME,
   PKG_SCRIPTS,
-  LOG_LEVEL,
+  VERBOSITY,
   CONFIG_FORMAT_CHOICES,
   CHANGELOG_FORMAT_CHOICES,
   CLIFF_FILE,
@@ -593,13 +600,9 @@ export default {
 ===== src\handleError.ts =====
 
 import CONSTANTS from "./constants/index.ts";
-import { logger } from "./utils/index.ts";
+import { hasVerbosity, logger } from "./utils/index.ts";
 
-export interface HandleErrorOptions {
-  verbose?: number;
-}
-
-export function handleError(err: unknown, options: HandleErrorOptions = {}): never {
+export function handleError(err: unknown, verbose: number): never {
   if (!err) {
     process.exit(0);
   }
@@ -610,9 +613,7 @@ export function handleError(err: unknown, options: HandleErrorOptions = {}): nev
   }
 
   if (err instanceof Error) {
-    const { verbose } = options;
-
-    if (verbose === undefined || verbose > CONSTANTS.LOG_LEVEL.DEBUG) {
+    if (hasVerbosity(verbose, CONSTANTS.VERBOSITY.TRACE)) {
       logger.error(err);
     } else {
       logger.error(err.message);
@@ -1331,10 +1332,10 @@ function matchBranch(requireBranch: ResolvedOptions["git"]["requireBranch"], inp
 
 import stringArgv from "string-argv";
 
-import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import type { ReleaseContext } from "../config/types.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
 import {
-  isVerbose,
+  hasVerbosity,
   interpolate,
   withSpinner,
   logCommand,
@@ -1354,7 +1355,7 @@ export async function genChangelog(options: ChangelogEnabledOptions, context: Re
       await runGitCliff(args, {
         nodeOptions: {
           cwd: options.cwd,
-          stdio: isVerbose(options) ? "inherit" : "pipe",
+          stdio: hasVerbosity(options.verbose) ? "inherit" : "pipe",
         },
       });
     } catch (error) {
@@ -1368,28 +1369,29 @@ export async function genChangelog(options: ChangelogEnabledOptions, context: Re
 }
 
 async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: ReleaseContext) {
-  const { args: argTemplate, output } = options.git.changelog;
+  const { verbose } = options;
+  const { args, output } = options.git.changelog;
 
-  const args = stringArgv(interpolate(argTemplate, context));
+  const gitCliffArgs = stringArgv(interpolate(args, context));
 
-  args.push("--config", context.resolvedCliffFile as string);
-  args.push("--output", output);
-  args.push(...getVerboseArgs(options));
+  gitCliffArgs.push("--config", context.resolvedCliffFile as string);
+  gitCliffArgs.push("--output", output);
+  gitCliffArgs.push(...getVerboseArgs(verbose));
 
   // 把ouput直接给到上下文方便复用
   context.changelog = {
     output,
   };
 
-  return args;
+  return gitCliffArgs;
 }
 
-function getVerboseArgs(options: ResolvedOptions) {
-  if (!isVerbose(options)) {
+function getVerboseArgs(verbose: number) {
+  if (!hasVerbosity(verbose)) {
     return [];
   }
 
-  return [`-${"v".repeat(options.verbose)}`];
+  return [`-${"v".repeat(verbose)}`];
 }
 
 
@@ -1837,7 +1839,7 @@ import { resolveCommand } from "package-manager-detector/commands";
 import { x, type Options } from "tinyexec";
 
 import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
-import CONSTANTS from "../constants/index.ts";
+import CONSTANTS, { type Verbosity } from "../constants/index.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
 import { interpolate } from "./interpolate.ts";
 import { readPackageJSON } from "./pkg.ts";
@@ -1919,9 +1921,10 @@ export function blank(lines: number = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
-export function isVerbose(options: ResolvedOptions) {
-  return options.verbose > CONSTANTS.LOG_LEVEL.NORMAL;
+export function hasVerbosity(verbose: number, threshold: Verbosity = CONSTANTS.VERBOSITY.VERBOSE) {
+  return verbose >= threshold;
 }
+
 export function isChangelogEnabled(options: ResolvedOptions): options is ChangelogEnabledOptions {
   return options.git.changelog !== false;
 }
@@ -1972,14 +1975,14 @@ export async function execCommand(
       throwOnError: true,
       nodeOptions: {
         cwd: options.cwd,
-        stdio: options.verbose > CONSTANTS.LOG_LEVEL.VERBOSE ? "inherit" : "pipe",
+        stdio: options.verbose > CONSTANTS.VERBOSITY.VERBOSE ? "inherit" : "pipe",
       },
     } satisfies Partial<Options>),
   );
 }
 
 export function logCommand(options: ResolvedOptions, displayCommand: string, args: string[]) {
-  if (isVerbose(options)) {
+  if (hasVerbosity(options.verbose)) {
     loggerWithTag.log(ansis.yellow(`$ ${displayCommand} ${formatArgs(args)}`));
   }
 }
@@ -2120,13 +2123,13 @@ export async function updatePackageJSON(
 import { Spinner } from "picospinner";
 
 import type { ResolvedOptions } from "../config/types.ts";
-import { isVerbose } from "./helpers.ts";
+import { hasVerbosity } from "./helpers.ts";
 import type { Awaitable } from "./types.ts";
 
 function noop(): void {}
 
 export function createSpinner(text: string, options: ResolvedOptions) {
-  if (isVerbose(options)) {
+  if (hasVerbosity(options.verbose)) {
     return {
       start: noop,
       stop: noop,

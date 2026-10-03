@@ -6,7 +6,14 @@ import fs from "fs-extra";
 import type { PackageJson } from "pkg-types";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
-import { addGitRemote, git, gitTagExists, readPackage } from "../helpers/git.ts";
+import {
+  addGitRemote,
+  git,
+  gitTagExists,
+  readPackage,
+  updatePackageJson,
+  writePackageJson,
+} from "../helpers/index.ts";
 
 vi.mock("@inquirer/prompts", () => ({
   select: vi.fn(),
@@ -106,10 +113,7 @@ describe("release", () => {
   });
 
   it("检测不到包管理器应该抛出异常", async () => {
-    await fs.writeJson(path.join(dir, "package.json"), {
-      name: "test-project",
-      version: "1.0.0",
-    });
+    await writePackageJson(dir, { packageManager: false });
 
     await expect(
       release({
@@ -121,11 +125,7 @@ describe("release", () => {
   it("Git 未安装应该抛出异常", async () => {
     mockedIsGitAvailable.mockResolvedValue(false);
 
-    await fs.writeJson(path.join(dir, "package.json"), {
-      name: "test-project",
-      version: "1.0.0",
-      packageManager: "pnpm@10.0.0",
-    });
+    await writePackageJson(dir);
 
     await expect(
       release({
@@ -137,11 +137,7 @@ describe("release", () => {
   });
 
   it("当前目录不是 Git 仓库应该抛出异常", async () => {
-    await fs.writeJson(path.join(dir, "package.json"), {
-      name: "test-project",
-      version: "1.0.0",
-      packageManager: "pnpm@10.0.0",
-    });
+    await writePackageJson(dir);
 
     await expect(
       release({
@@ -151,16 +147,7 @@ describe("release", () => {
   });
 
   it("Git working tree 不干净应该抛出异常", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -181,15 +168,7 @@ describe("release", () => {
 
   it("没有 Git remote 应该抛出异常", async () => {
     // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -206,15 +185,7 @@ describe("release", () => {
   });
 
   it("package.json name 为空应该抛出异常", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir, { name: false });
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -234,16 +205,8 @@ describe("release", () => {
   });
 
   it("package.json version 非法应该抛出异常", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "not-a-version",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
+    await updatePackageJson(dir, { version: "not-a-version" });
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -263,16 +226,7 @@ describe("release", () => {
   });
 
   it("Git branch 不符合 requireBranch 应该抛出异常", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "develop"]);
@@ -292,16 +246,7 @@ describe("release", () => {
   });
 
   it("缺少 cliff.toml 应该提前抛出异常", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -321,16 +266,7 @@ describe("release", () => {
   });
 
   it("requireBranch=false 时允许任意 branch 发布", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "develop"]);
@@ -364,16 +300,7 @@ describe("release", () => {
   });
 
   it("应该执行一次完整的 patch 版本发布", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -432,16 +359,7 @@ describe("release", () => {
   });
 
   it("应该支持自定义版本号", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -474,16 +392,7 @@ describe("release", () => {
   });
 
   it("应该支持 minor release", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -513,16 +422,7 @@ describe("release", () => {
   });
 
   it("应该支持 major release", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -552,16 +452,7 @@ describe("release", () => {
   });
 
   it("prerelease 版本应该允许选择非 latest tag", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -606,16 +497,7 @@ describe("release", () => {
   });
 
   it("应该支持自定义 dist-tag", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -646,16 +528,7 @@ describe("release", () => {
   });
 
   it("git.changelog=false 时不应该生成 changelog", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -695,16 +568,7 @@ describe("release", () => {
   });
 
   it("用户拒绝 changelog 后应该取消 release", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -740,17 +604,7 @@ describe("release", () => {
   });
 
   it("git-cliff 失败应该阻止 release", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
-
+    await writePackageJson(dir);
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
     await git(dir, ["config", "user.name", "releaseasy-test"]);
@@ -782,16 +636,7 @@ describe("release", () => {
   });
 
   it("dry-run 不应该修改 package.json", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -828,16 +673,7 @@ describe("release", () => {
   });
 
   it("summary 确认失败应该取消 release", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -876,16 +712,7 @@ describe("release", () => {
   });
 
   it("应该执行 before:init 和 after:release hooks", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -919,16 +746,7 @@ describe("release", () => {
   });
 
   it("应该执行 before/after changelog hooks", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -962,16 +780,7 @@ describe("release", () => {
   });
 
   it("应该执行 before/after bump hooks", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -1005,16 +814,7 @@ describe("release", () => {
   });
 
   it("hook 可以使用 ReleaseContext 插值变量", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -1050,15 +850,7 @@ describe("release", () => {
     // 不配置真正可用的 remote。
     // 但 remote URL 存在，所以 createContext 能通过。
     // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
@@ -1109,16 +901,7 @@ describe("release", () => {
   });
 
   it("应该使用自定义 tagName 和 commitMessage", async () => {
-    // 写入json
-    await fs.writeJson(
-      path.join(dir, "package.json"),
-      {
-        name: "test-project",
-        version: "1.0.0",
-        packageManager: "pnpm@10.0.0",
-      },
-      { spaces: 2 },
-    );
+    await writePackageJson(dir);
 
     // 初始化git仓库
     await git(dir, ["init", "-b", "main"]);
