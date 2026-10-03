@@ -149,7 +149,7 @@ describe("release", () => {
   it("Git working tree 不干净应该抛出异常", async () => {
     await writePackageJson(dir);
 
-    await initGitRepository(dir, { withCliffConfig: false });
+    await initGitRepository(dir, { cliffConfig: false });
 
     // 写入一个脏数据
     await fs.writeFile(path.join(dir, "dirty.txt"), "dirty", "utf8");
@@ -165,7 +165,7 @@ describe("release", () => {
     // 写入json
     await writePackageJson(dir);
 
-    await initGitRepository(dir, { withCliffConfig: false });
+    await initGitRepository(dir, { cliffConfig: false });
 
     await expect(
       release({
@@ -177,7 +177,7 @@ describe("release", () => {
   it("package.json name 为空应该抛出异常", async () => {
     await writePackageJson(dir, { name: false });
 
-    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
+    await initGitRepository(dir, { remoteDir, cliffConfig: false });
 
     await expect(
       release({
@@ -190,7 +190,7 @@ describe("release", () => {
     await writePackageJson(dir);
     await updatePackageJson(dir, { version: "not-a-version" });
 
-    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
+    await initGitRepository(dir, { remoteDir, cliffConfig: false });
 
     await expect(
       release({
@@ -202,7 +202,7 @@ describe("release", () => {
   it("Git branch 不符合 requireBranch 应该抛出异常", async () => {
     await writePackageJson(dir);
 
-    await initGitRepository(dir, { remoteDir, withCliffConfig: false, branch: "develop" });
+    await initGitRepository(dir, { remoteDir, cliffConfig: false, branch: "develop" });
 
     await expect(
       release({
@@ -214,7 +214,7 @@ describe("release", () => {
   it("缺少 cliff.toml 应该提前抛出异常", async () => {
     await writePackageJson(dir);
 
-    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
+    await initGitRepository(dir, { remoteDir, cliffConfig: false });
 
     await expect(
       release({

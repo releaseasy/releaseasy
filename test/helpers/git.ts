@@ -4,12 +4,6 @@ import { fileURLToPath } from "node:url";
 
 import { x } from "tinyexec";
 
-interface InitGitRepositoryOptions {
-  branch?: string;
-  withCliffConfig?: boolean;
-  remoteDir?: string;
-}
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -22,7 +16,7 @@ export async function git(cwd: string, args: string[]) {
   });
 }
 
-export async function addGitRemote(cwd: string, remoteDir: string) {
+async function addGitRemote(cwd: string, remoteDir: string) {
   await git(remoteDir, ["init", "--bare"]);
   await git(cwd, ["remote", "add", "origin", remoteDir]);
 }
@@ -36,8 +30,15 @@ export async function gitTagExists(cwd: string, tag: string) {
   }
 }
 
-export async function initGitRepository(dir: string, options: InitGitRepositoryOptions = {}) {
-  const { branch = "main", withCliffConfig = true, remoteDir } = options;
+export async function initGitRepository(
+  dir: string,
+  options: {
+    branch?: string;
+    cliffConfig?: boolean;
+    remoteDir?: string;
+  } = {},
+) {
+  const { branch = "main", cliffConfig = true, remoteDir } = options;
 
   // 初始化 git 仓库
   await git(dir, ["init", "-b", branch]);
@@ -47,10 +48,10 @@ export async function initGitRepository(dir: string, options: InitGitRepositoryO
   await git(dir, ["config", "user.email", "releaseasy@example.com"]);
 
   // 插入 git-cliff 配置
-  if (withCliffConfig) {
-    const cliffConfig = path.resolve(__dirname, "../fixtures/cliff.toml");
+  if (cliffConfig) {
+    const cliffConfigFile = path.resolve(__dirname, "../fixtures/cliff.toml");
 
-    await copyFile(cliffConfig, path.join(dir, "cliff.toml"));
+    await copyFile(cliffConfigFile, path.join(dir, "cliff.toml"));
   }
 
   await git(dir, ["add", "."]);
