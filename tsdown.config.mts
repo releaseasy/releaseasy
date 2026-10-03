@@ -1,5 +1,10 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { copyFiles } from "rolldown-plugin-copy-files";
 import { defineConfig } from "tsdown";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   entry: ["./src/{index,cli}.ts"],
@@ -19,4 +24,7 @@ export default defineConfig({
       ],
     }),
   ],
+  alias: {
+    "@": path.resolve(__dirname, "src"),
+  },
 });

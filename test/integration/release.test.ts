@@ -404,7 +404,7 @@ describe("release", () => {
   it("git.changelog=false 时不应该生成 changelog", async () => {
     await writePackageJson(dir);
 
-    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
+    await initGitRepository(dir, { remoteDir, cliffConfig: false });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 

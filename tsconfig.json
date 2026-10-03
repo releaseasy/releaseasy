@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "target": "ES2024",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -14,5 +17,6 @@
     "exactOptionalPropertyTypes": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "*.config.mts"],
+  "exclude": ["node_modules", "dist"]
 }
