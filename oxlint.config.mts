@@ -22,7 +22,7 @@ export default defineConfig({
     "no-underscore-dangle": [
       "error",
       {
-        allow: ["__dirname"],
+        allow: ["__dirname", "__filename"],
       },
     ],
   },

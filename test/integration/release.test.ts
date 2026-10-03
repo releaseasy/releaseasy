@@ -1,4 +1,4 @@
-import { mkdtemp, copyFile } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -7,9 +7,9 @@ import type { PackageJson } from "pkg-types";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  addGitRemote,
   git,
   gitTagExists,
+  initGitRepository,
   readPackage,
   updatePackageJson,
   writePackageJson,
@@ -149,12 +149,7 @@ describe("release", () => {
   it("Git working tree 不干净应该抛出异常", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+    await initGitRepository(dir, { withCliffConfig: false });
 
     // 写入一个脏数据
     await fs.writeFile(path.join(dir, "dirty.txt"), "dirty", "utf8");
@@ -170,12 +165,7 @@ describe("release", () => {
     // 写入json
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+    await initGitRepository(dir, { withCliffConfig: false });
 
     await expect(
       release({
@@ -187,15 +177,7 @@ describe("release", () => {
   it("package.json name 为空应该抛出异常", async () => {
     await writePackageJson(dir, { name: false });
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
 
     await expect(
       release({
@@ -208,15 +190,7 @@ describe("release", () => {
     await writePackageJson(dir);
     await updatePackageJson(dir, { version: "not-a-version" });
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
 
     await expect(
       release({
@@ -228,15 +202,7 @@ describe("release", () => {
   it("Git branch 不符合 requireBranch 应该抛出异常", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "develop"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir, withCliffConfig: false, branch: "develop" });
 
     await expect(
       release({
@@ -248,15 +214,7 @@ describe("release", () => {
   it("缺少 cliff.toml 应该提前抛出异常", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
 
     await expect(
       release({
@@ -268,19 +226,7 @@ describe("release", () => {
   it("requireBranch=false 时允许任意 branch 发布", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "develop"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -302,19 +248,7 @@ describe("release", () => {
   it("应该执行一次完整的 patch 版本发布", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect
       // selectVersion()
@@ -361,19 +295,7 @@ describe("release", () => {
   it("应该支持自定义版本号", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("custom").mockResolvedValueOnce("latest");
 
@@ -394,19 +316,7 @@ describe("release", () => {
   it("应该支持 minor release", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.1.0").mockResolvedValueOnce("latest");
 
@@ -424,19 +334,7 @@ describe("release", () => {
   it("应该支持 major release", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("2.0.0").mockResolvedValueOnce("latest");
 
@@ -454,19 +352,7 @@ describe("release", () => {
   it("prerelease 版本应该允许选择非 latest tag", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.1.0-beta.1").mockResolvedValueOnce("next");
 
@@ -499,19 +385,7 @@ describe("release", () => {
   it("应该支持自定义 dist-tag", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("canary");
 
@@ -530,19 +404,7 @@ describe("release", () => {
   it("git.changelog=false 时不应该生成 changelog", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    // await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir, withCliffConfig: false });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -570,19 +432,7 @@ describe("release", () => {
   it("用户拒绝 changelog 后应该取消 release", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -605,19 +455,7 @@ describe("release", () => {
 
   it("git-cliff 失败应该阻止 release", async () => {
     await writePackageJson(dir);
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedRunGitCliff.mockRejectedValueOnce(new Error("git-cliff failed"));
 
@@ -638,19 +476,7 @@ describe("release", () => {
   it("dry-run 不应该修改 package.json", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -675,19 +501,7 @@ describe("release", () => {
   it("summary 确认失败应该取消 release", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -714,19 +528,7 @@ describe("release", () => {
   it("应该执行 before:init 和 after:release hooks", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -748,19 +550,7 @@ describe("release", () => {
   it("应该执行 before/after changelog hooks", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -782,19 +572,7 @@ describe("release", () => {
   it("应该执行 before/after bump hooks", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -816,19 +594,7 @@ describe("release", () => {
   it("hook 可以使用 ReleaseContext 插值变量", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 
@@ -852,19 +618,7 @@ describe("release", () => {
     // 写入json
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    // await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir);
 
     const invalidRemote = path.join(
       os.tmpdir(),
@@ -903,19 +657,7 @@ describe("release", () => {
   it("应该使用自定义 tagName 和 commitMessage", async () => {
     await writePackageJson(dir);
 
-    // 初始化git仓库
-    await git(dir, ["init", "-b", "main"]);
-    await git(dir, ["config", "user.name", "releaseasy-test"]);
-    await git(dir, ["config", "user.email", "releaseasy@example.com"]);
-
-    // 插入一个配置文件
-    await copyFile("./test/fixtures/cliff.toml", `${dir}/cliff.toml`);
-
-    await git(dir, ["add", "."]);
-    await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
-
-    // 添加一个远程仓库
-    await addGitRemote(dir, remoteDir);
+    await initGitRepository(dir, { remoteDir });
 
     mockedSelect.mockResolvedValueOnce("1.0.1").mockResolvedValueOnce("latest");
 

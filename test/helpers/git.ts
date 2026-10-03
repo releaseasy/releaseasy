@@ -1,4 +1,17 @@
+import { copyFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { x } from "tinyexec";
+
+interface InitGitRepositoryOptions {
+  branch?: string;
+  withCliffConfig?: boolean;
+  remoteDir?: string;
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function git(cwd: string, args: string[]) {
   return x("git", args, {
@@ -20,5 +33,32 @@ export async function gitTagExists(cwd: string, tag: string) {
     return true;
   } catch {
     return false;
+  }
+}
+
+export async function initGitRepository(dir: string, options: InitGitRepositoryOptions = {}) {
+  const { branch = "main", withCliffConfig = true, remoteDir } = options;
+
+  // 初始化 git 仓库
+  await git(dir, ["init", "-b", branch]);
+
+  await git(dir, ["config", "user.name", "releaseasy-test"]);
+
+  await git(dir, ["config", "user.email", "releaseasy@example.com"]);
+
+  // 插入 git-cliff 配置
+  if (withCliffConfig) {
+    const cliffConfig = path.resolve(__dirname, "../fixtures/cliff.toml");
+
+    await copyFile(cliffConfig, path.join(dir, "cliff.toml"));
+  }
+
+  await git(dir, ["add", "."]);
+
+  await git(dir, ["commit", "--no-verify", "-m", "chore: initial commit"]);
+
+  // 添加远程仓库
+  if (remoteDir) {
+    await addGitRemote(dir, remoteDir);
   }
 }
