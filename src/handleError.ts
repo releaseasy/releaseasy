@@ -1,11 +1,7 @@
 import CONSTANTS from "./constants/index.ts";
-import { logger } from "./utils/index.ts";
+import { hasVerbosity, logger } from "./utils/index.ts";
 
-export interface HandleErrorOptions {
-  verbose?: number;
-}
-
-export function handleError(err: unknown, options: HandleErrorOptions = {}): never {
+export function handleError(err: unknown, verbose: number): never {
   if (!err) {
     process.exit(0);
   }
@@ -16,9 +12,7 @@ export function handleError(err: unknown, options: HandleErrorOptions = {}): nev
   }
 
   if (err instanceof Error) {
-    const { verbose } = options;
-
-    if (verbose === undefined || verbose > CONSTANTS.VERBOSITY.DEBUG) {
+    if (hasVerbosity(verbose, CONSTANTS.VERBOSITY.TRACE)) {
       logger.error(err);
     } else {
       logger.error(err.message);

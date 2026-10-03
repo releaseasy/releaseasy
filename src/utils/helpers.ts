@@ -91,8 +91,8 @@ export function blank(lines: number = 1) {
   process.stdout.write("\n".repeat(lines));
 }
 
-export function hasVerbosity(verbose: number, level: Verbosity = CONSTANTS.VERBOSITY.VERBOSE) {
-  return verbose >= level;
+export function hasVerbosity(verbose: number, threshold: Verbosity = CONSTANTS.VERBOSITY.VERBOSE) {
+  return verbose >= threshold;
 }
 
 export function isChangelogEnabled(options: ResolvedOptions): options is ChangelogEnabledOptions {

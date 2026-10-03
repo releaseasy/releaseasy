@@ -8,6 +8,7 @@ const VERBOSITY = {
   NORMAL: 0,
   VERBOSE: 1,
   DEBUG: 2,
+  TRACE: 3,
 } as const;
 
 export type Verbosity = (typeof VERBOSITY)[keyof typeof VERBOSITY];

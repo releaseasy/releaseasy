@@ -3,9 +3,12 @@
 import { Command } from "commander";
 
 import pkg from "../package.json" with { type: "json" };
-import { type InlineConfig } from "./config/types.ts";
+import { type InlineConfig, type ResolvedOptions } from "./config/types.ts";
 import CONSTANTS from "./constants/index.ts";
 import { handleError } from "./handleError.ts";
+
+type VerbosityOptions = Pick<ResolvedOptions, "verbose">;
+type Verbose = ResolvedOptions["verbose"];
 
 const program = new Command();
 
@@ -32,7 +35,7 @@ program
   .option("-C, --cwd <path>", "Run the release process in the specified directory")
   .option("-d, --dry-run", "Simulate release without applying changes.", false)
   .option("-c, --config <path>", "Path to the config file")
-  .option<number>(
+  .option<Verbose>(
     "-v, --verbose",
     "Increases the logging verbosity",
     (_, previous) => {
@@ -87,9 +90,12 @@ async function runCLI() {
   try {
     await program.parseAsync(process.argv);
   } catch (err) {
-    handleError(err, {
-      verbose: currentCommand.opts().verbose,
-    });
+    const verbose =
+      currentCommand?.opts<VerbosityOptions>().verbose ??
+      program.opts<VerbosityOptions>().verbose ??
+      CONSTANTS.VERBOSITY.NORMAL;
+
+    handleError(err, verbose);
   }
 }
 
