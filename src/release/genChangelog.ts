@@ -1,6 +1,6 @@
 import stringArgv from "string-argv";
 
-import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import type { ReleaseContext } from "../config/types.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
 import {
   hasVerbosity,
@@ -37,26 +37,27 @@ export async function genChangelog(options: ChangelogEnabledOptions, context: Re
 }
 
 async function buildGitCliffArgs(options: ChangelogEnabledOptions, context: ReleaseContext) {
-  const { args: argTemplate, output } = options.git.changelog;
+  const { verbose } = options;
+  const { args, output } = options.git.changelog;
 
-  const args = stringArgv(interpolate(argTemplate, context));
+  const gitCliffArgs = stringArgv(interpolate(args, context));
 
-  args.push("--config", context.resolvedCliffFile as string);
-  args.push("--output", output);
-  args.push(...getVerboseArgs(options));
+  gitCliffArgs.push("--config", context.resolvedCliffFile as string);
+  gitCliffArgs.push("--output", output);
+  gitCliffArgs.push(...getVerboseArgs(verbose));
 
   // 把ouput直接给到上下文方便复用
   context.changelog = {
     output,
   };
 
-  return args;
+  return gitCliffArgs;
 }
 
-function getVerboseArgs(options: ResolvedOptions) {
-  if (!hasVerbosity(options.verbose)) {
+function getVerboseArgs(verbose: number) {
+  if (!hasVerbosity(verbose)) {
     return [];
   }
 
-  return [`-${"v".repeat(options.verbose)}`];
+  return [`-${"v".repeat(verbose)}`];
 }
