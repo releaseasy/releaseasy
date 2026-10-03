@@ -11,9 +11,9 @@ import { x, type Options } from "tinyexec";
 import type { ResolvedOptions, ReleaseContext, HookEvent } from "../config/types.ts";
 import CONSTANTS, { type Verbosity } from "../constants/index.ts";
 import type { ChangelogEnabledOptions } from "../release.ts";
-import { interpolate } from "./interpolate.ts";
 import { readPackageJSON } from "./pkg.ts";
 import { createSpinner } from "./spinner.ts";
+import { interpolate } from "./template.ts";
 import type { Awaitable } from "./types.ts";
 
 export const logger = createConsola();

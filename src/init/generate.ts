@@ -4,16 +4,9 @@ import { fileURLToPath } from "node:url";
 
 import ansis from "ansis";
 
-import packageJson from "../../package.json" with { type: "json" };
 import CONSTANTS, { type ConfigAction } from "../constants/index.ts";
 import configJson from "../init/templates/releaseasy.config.json" with { type: "json" };
-import {
-  exists,
-  readPackageJSON,
-  runGitCliff,
-  updatePackageJSON,
-  writePackageJSON,
-} from "../utils/index.ts";
+import { exists, outputFile, runGitCliff, sprintf, updatePackageJSON } from "../utils/index.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -114,13 +107,11 @@ function resolveConfigExtension(context: InitContext) {
 
 async function writeConfigFile(template: string, target: string) {
   if (path.extname(template) === ".json") {
-    const config = readPackageJSON(template);
-
-    const output = {
-      $schema: `https://cdn.jsdelivr.net/npm/releaseasy@${packageJson.version}/schema/releaseasy.json`,
-      ...config,
-    };
-    return await writePackageJSON(target, output);
+    const cnt = await fs.readFile(template, "utf-8");
+    return outputFile(
+      target,
+      sprintf(cnt, "$schema", "./node_modules/releaseasy/schema/releaseasy.json"),
+    );
   }
   await fs.copyFile(template, target);
 }

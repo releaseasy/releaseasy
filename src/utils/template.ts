@@ -24,3 +24,23 @@ export function interpolate(template: string, context: ReleaseContext): string {
     return String(value);
   });
 }
+
+export function sprintf(template: string, ...args: string[]) {
+  let index = 0;
+
+  const result = template.replace(/%s/g, () => {
+    const value = args[index++];
+
+    if (value === undefined) {
+      throw new Error("Missing template argument");
+    }
+
+    return value;
+  });
+
+  if (index < args.length) {
+    throw new Error("Too many template arguments");
+  }
+
+  return result;
+}

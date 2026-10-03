@@ -234,9 +234,7 @@ describe("init", () => {
 
     const config = await fs.readJson(path.join(dir, "releaseasy.config.json"));
 
-    console.log(config);
-
-    // expect(config).toHaveProperty("increments");
-    // expect(config).toHaveProperty("distTags");
+    expect(config).toHaveProperty("increments");
+    expect(config).toHaveProperty("distTags");
   });
 });
