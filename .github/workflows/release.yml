@@ -38,7 +38,7 @@ jobs:
         run: pnpm publish --no-git-checks
 
       - name: Generate changelog for the latest release
-        run: pnpm releaseasy changelog --config cliff.toml -o CHANGELOG-LATEST.md -vv --latest --strip header
+        run: pnpm release changelog --config cliff.toml -o CHANGELOG-LATEST.md -vv --latest --strip header
 
       - name: Github Release
         uses: softprops/action-gh-release@v2
