@@ -34,7 +34,8 @@
   },
   "files": [
     "dist/",
-    "scheme/"
+    "scheme/",
+    "README.md"
   ],
   "type": "module",
   "sideEffects": false,
