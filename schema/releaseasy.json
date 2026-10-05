@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "releaseasy.json",
+  "title": "JSON schema for releaseasy configuration",
+  "description": "Configuration schema for releaseasy.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URL of the JSON Schema used to validate this configuration file."
+    },
+
+    "increments": {
+      "type": "array",
+      "description": "Allowed semantic version increments.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "major",
+          "premajor",
+          "minor",
+          "preminor",
+          "patch",
+          "prepatch",
+          "prerelease",
+          "release"
+        ]
+      },
+      "default": ["patch", "minor", "major"]
+    },
+
+    "distTags": {
+      "type": "array",
+      "description": "Distribution tags that can be used when publishing a release.",
+      "items": {
+        "type": "string"
+      },
+      "default": ["latest", "next"]
+    },
+
+    "git": {
+      "$ref": "./git.json"
+    },
+
+    "hooks": {
+      "$ref": "./hooks.json"
+    }
+  }
+}

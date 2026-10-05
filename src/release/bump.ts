@@ -1,0 +1,23 @@
+import type { ReleaseContext, ResolvedOptions } from "../config/types.ts";
+import { readPackageJSON, writePackageJSON, runHook } from "../utils/index.ts";
+
+export async function bump(options: ResolvedOptions, context: ReleaseContext) {
+  const { version, distTag, packageJsonPath } = context;
+
+  await runHook(options, "before:bump", context);
+
+  const pkg = await readPackageJSON(packageJsonPath);
+
+  // 写入版本号
+  pkg.version = version;
+
+  // 写入tag
+  pkg.publishConfig = {
+    ...pkg.publishConfig,
+    tag: distTag,
+  };
+
+  await writePackageJSON(packageJsonPath, pkg);
+
+  await runHook(options, "after:bump", context);
+}
