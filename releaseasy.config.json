@@ -8,5 +8,9 @@
       "configFile": "cliff.toml",
       "args": "--tag ${version}"
     }
+  },
+  "hooks": {
+    "after:changelog": "oxfmt --write CHANGELOG.md",
+    "after:bump": "oxfmt --write package.json"
   }
 }
