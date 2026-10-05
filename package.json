@@ -1,6 +1,6 @@
 {
   "name": "releaseasy",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Release made easy",
   "keywords": [
     "bump",
@@ -47,6 +47,9 @@
       "default": "./dist/index.mjs"
     },
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "tag": "latest"
   },
   "scripts": {
     "prepare": "simple-git-hooks",
